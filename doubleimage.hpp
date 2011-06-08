@@ -20,14 +20,14 @@ public:
 	Point2D snapToGrid(const Point2D& point) const;
 	double valueAt(double x, double y) const;
 	double valueAt(const Point2D& point) const;
-	TriFit getOptimalFit(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap);
+	TriFit getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap);
 /*
 	std::list<double> getPointsInside(Triangle* t);
 	std::list<double> getCorrespondingPoints(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap);
 */
-	void getInsideAndCorresponding(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints);
+	void getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints);
 	std::vector<Point2D> getCorners();
-	Triangle* getBestMatch(Triangle* smaller, TriFit* optimal, Triangle::PointMap* pMap, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
+	TriFit getBestMatch(Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
 };
 
 #endif

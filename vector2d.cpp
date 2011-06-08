@@ -10,22 +10,26 @@ using namespace std;
 
 void Vector2D::normalize() {
 	while (this->angle < 0) {
-		this->angle += PI * 2;
+		angle += PI * 2;
 	}
 	while (this->angle > PI * 2) {
-		this->angle -= PI * 2;
+		angle -= PI * 2;
 	}
 	if (this->angle >= PI) {
-		this->magnitude *= -1;
-		this->angle -= PI;
+		magnitude *= -1;
+		angle -= PI;
 	}
 }
 
-Vector2D::Vector2D(const Point2D& origin, const Point2D& point2) {
-	this->magnitude = origin.distance(point2);
-	this->angle = atan2(point2.getY()
-			- origin.getY(), point2.getX() - origin.getX());
-	this->normalize();
+Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) {
+	if (!unit) {
+		magnitude = origin.distance(point2);
+	} else {
+		magnitude = 1.0;
+	}
+	angle = atan2(point2.getY() - origin.getY(),
+	                    point2.getX() - origin.getX());
+	normalize();
 }
 
 double Vector2D::getMagnitude() const {
@@ -33,11 +37,7 @@ double Vector2D::getMagnitude() const {
 }
 
 double Vector2D::angleBetween(const Vector2D & other) const {
-	if (this->angle > other.getAngle()) {
-		return this->angle - other.getAngle();
-	} else {
-		return other.getAngle() - this->angle;
-	}
+	return abs(other.getAngle() - angle);
 }
 
 Vector2D::Vector2D(const double magnitude, const double angle) :
@@ -46,20 +46,20 @@ Vector2D::Vector2D(const double magnitude, const double angle) :
 }
 
 Vector2D Vector2D::getOpposite() const {
-	return Vector2D(this->magnitude * -1.0, this->angle);
+	return Vector2D(magnitude * -1.0, angle);
 }
 
 double Vector2D::crossProduct(const Vector2D& other) const {
-	return this->magnitude * other.getMagnitude() * sin(this->angleBetween(
+	return magnitude * other.getMagnitude() * sin(angleBetween(
 			other));
 }
 
 double Vector2D::getAngle() const {
-	return this->angle;
+	return angle;
 }
 
 bool Vector2D::operator==(const Vector2D &other) const {
-	return doublesEqual(this->magnitude, other.magnitude) && doublesEqual(this->angle, other.angle);
+	return doublesEqual(magnitude, other.magnitude) && doublesEqual(angle, other.angle);
 }
 
 std::string Vector2D::str () const {

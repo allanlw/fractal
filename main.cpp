@@ -17,13 +17,13 @@ int main(int argc, char* argv[]) {
 	DoubleImage image(lenna);
 	TriangleTree tree(image);
 
-	while (true) {
+	for (int i = 0; i < 10; i++) {
 		Triangle* cur = tree.assignOne();
 		if (cur == NULL) break;
 		cout << tree.getLastId();
 		cout << " - "<< (cur->isTerminal()?"Termainal":"Not Termainal");
 		if (cur->isTerminal()) {
-			cout << " Error: " << cur->getFit().error;
+			cout << " Error: " << cur->getTarget().error;
 		}
 		cout << endl;
 	}

@@ -19,7 +19,7 @@ private:
 	void normalize();
 public:
 	Vector2D(const double magnitude, const double angle);
-	Vector2D(const Point2D& origin, const Point2D& point2d);
+	Vector2D(const Point2D& origin, const Point2D& point2d, bool unit=false);
 	double crossProduct(const Vector2D& other) const;
 	double angleBetween(const Vector2D& other) const;
 	double getAngle() const;

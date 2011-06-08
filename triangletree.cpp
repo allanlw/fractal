@@ -32,14 +32,12 @@ Triangle* TriangleTree::assignOne() {
 		subdivide(next);
 		return next;
 	}
-	Triangle::PointMap map = Triangle::P012;
-	TriFit fit(0,0,0);
 	list<Triangle*> above;
 	insert_iterator<list<Triangle*> > it(above, above.end());
 	getAllAbove(next, it);
-	Triangle* best = image.getBestMatch(next, &fit, &map, above.begin(), above.end());
-	if (fit.error < ERROR_CUTOFF && fit.error >= 0) {
-		next->setTarget(best, fit, map);
+	TriFit best = image.getBestMatch(next, above.begin(), above.end());
+	if (best.error < ERROR_CUTOFF && best.error >= 0) {
+		next->setTarget(best);
 	} else {
 		subdivide(next);
 	}

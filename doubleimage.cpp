@@ -1,7 +1,6 @@
 #include "doubleimage.hpp"
 
 #include "mathutils.hpp"
-
 #include "constant.hpp"
 
 using namespace std;
@@ -42,10 +41,10 @@ double DoubleImage::valueAt(double x, double y) const {
 }
 
 double DoubleImage::valueAt(const Point2D& point) const {
-	return this->valueAt(point.getX(), point.getY());
+	return valueAt(point.getX(), point.getY());
 }
 
-TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap) {
+TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap) {
 	list<double> targetPoints;
 	list<double> rangePoints;
 	getInsideAndCorresponding(smaller, larger, pMap, &rangePoints, &targetPoints);
@@ -70,8 +69,9 @@ TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, Triangle:
 			productSum + 2.0 * o * domainSum) + o * (o * n
 			* n - 2.0 * rangeSum)));
 
-	return TriFit(s, o, r);
+	return TriFit(s, o, r, pMap, larger);
 }
+
 /*
 std::list<double> DoubleImage::getPointsInside(Triangle* t) {
 	Rectangle bounds = t->getBoundingBox();
@@ -109,7 +109,7 @@ std::list<double> DoubleImage::getCorrespondingPoints(Triangle* smaller, Triangl
 }
 */
 
-void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints) {
+void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints) {
 	Rectangle bounds = larger->getBoundingBox();
 
 	if (largerPoints == NULL || smallerPoints == NULL) {
@@ -121,13 +121,18 @@ void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger,
 	double yMax = snapYToGrid(bounds.getY() + bounds.getHeight());
 	double xInc = 1.0 / ((double)gdImageSX(image));
 	double yInc = 1.0 / ((double)gdImageSY(image));
+
 	for (double x = snapXToGrid(bounds.getX()); x <= xMax; x += xInc) {
+		bool hit = false;
 		for (double y = snapYToGrid(bounds.getY()); y <= yMax; y += yInc) {
 			Point2D point(x,y);
 			if (larger->pointInside(point)) {
 				largerPoints->push_back(valueAt(point));
 				Point2D transformed = trans.transform(point);
 				smallerPoints->push_back(valueAt(transformed));
+				hit = true;
+			} else if (hit) {
+				break;
 			}
 		}
 	}
@@ -142,21 +147,19 @@ std::vector<Point2D> DoubleImage::getCorners() {
 	return result;
 }
 
-Triangle* DoubleImage::getBestMatch(Triangle* smaller, TriFit* optimal, Triangle::PointMap* pMap, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
-	Triangle* best = NULL;
-	optimal->error = -1;
+TriFit DoubleImage::getBestMatch(Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
+	TriFit best;
+	best.error = -1;
 	double maxArea = MAX_SEARCH_RATIO*smaller->getArea();
 	for(list<Triangle*>::const_iterator it = start; it!=end;it++) {
 		if ((*it)->getArea() > maxArea || smaller == *it) {
 			continue;
 		}
-		for (unsigned char i = 0; i < Triangle::NUM_MAPS; i++) {
-			Triangle::PointMap map = Triangle::pointMapFromInt(i);
+		for (unsigned char i = 0; i < TriFit::NUM_MAPS; i++) {
+			TriFit::PointMap map = TriFit::pointMapFromInt(i);
 			TriFit f = getOptimalFit(smaller,*it, map);
-			if (f.error < optimal->error || optimal->error < 0) {
-				*optimal = f;
-				best = *it;
-				*pMap = map;
+			if (f.error < best.error || best.error < 0) {
+				best = f;
 			}
 		}
 	}

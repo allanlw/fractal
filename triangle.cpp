@@ -8,8 +8,7 @@
 using namespace std;
 
 Triangle::Triangle(const Point2D* point0, const Point2D* point1,
-		const Point2D* point2) :  nextSibling(NULL),prevSibling(NULL), parent(NULL), terminal(true), id(0),points(3), children(0), target(NULL)
-, pointMap(P012) {
+		const Point2D* point2) :  nextSibling(NULL),prevSibling(NULL), parent(NULL), terminal(true), id(0),points(3), children(0) {
 	this->points[0] = point0;
 	this->points[1] = point1;
 	this->points[2] = point2;
@@ -35,13 +34,11 @@ Triangle * Triangle::getParent() const {
 void Triangle::setParent(Triangle* parent) {
 	this->parent = parent;
 }
-Triangle * Triangle::getTarget() const {
+TriFit Triangle::getTarget() const {
 	return this->target;
 }
-void Triangle::setTarget(Triangle* target, TriFit fit, PointMap pMap) {
+void Triangle::setTarget(TriFit target) {
 	this->target = target;
-	this->fit = fit;
-	this->pointMap = pMap;
 }
 const std::vector<const Point2D*>* Triangle::getPoints() const {
 	return &(this->points);
@@ -52,17 +49,11 @@ const std::vector<Triangle*>* Triangle::getChildren() const {
 bool Triangle::isTerminal() const {
 	return this->terminal;
 }
-TriFit Triangle::getFit() const {
-	return this->fit;
-}
 size_t Triangle::getId() const {
 	return this->id;
 }
 void Triangle::setId(size_t id) {
 	this->id = id;
-}
-Triangle::PointMap Triangle::getPointMap() const {
-	return this->pointMap;
 }
 
 Rectangle Triangle::getBoundingBox() const {
@@ -87,106 +78,27 @@ Rectangle Triangle::getBoundingBox() const {
 	return Rectangle(minx, miny, maxx - minx, maxy - miny);
 }
 
-unsigned char Triangle::getPoint0(PointMap pointMap) {
-	switch (pointMap) {
-	case P012:
-	case P021:
-		return 0;
-		break;
-	case P102:
-	case P120:
-		return 1;
-		break;
-	case P201:
-	case P210:
-		return 2;
-		break;
-	default:
-		return -1;
-	}
-}
-unsigned char Triangle::getPoint1(PointMap pointMap) {
-	switch (pointMap) {
-	case P102:
-	case P201:
-		return 0;
-		break;
-	case P012:
-	case P210:
-		return 1;
-		break;
-	case P021:
-	case P120:
-		return 2;
-		break;
-	default:
-		return -1;
-	}
-}
-unsigned char Triangle::getPoint2(PointMap pointMap) {
-	switch (pointMap) {
-	case P120:
-	case P210:
-		return 0;
-		break;
-	case P201:
-	case P021:
-		return 1;
-		break;
-	case P102:
-	case P012:
-		return 2;
-		break;
-	default:
-		return -1;
-	}
-}
-
 double Triangle::getArea() const {
 	Vector2D ab (*points[0], *points[1]);
 	Vector2D ac (*points[0], *points[2]);
 	return abs(ab.crossProduct(ac))/2.0;
 }
 
-Triangle::PointMap Triangle::pointMapFromInt(unsigned char pMap) {
-	switch(pMap) {
-	default:
-	case 0:
-		return P012;
-		break;
-	case 1:
-		return P021;
-		break;
-	case 2:
-		return P102;
-		break;
-	case 3:
-		return P120;
-		break;
-	case 4:
-		return P201;
-		break;
-	case 5:
-		return P210;
-		break;
-	}
-}
-
 bool Triangle::pointInside(const Point2D& point) const {
-	const Vector2D ba(*points[0], *points[1]);
-	const Vector2D pa(*points[0], point);
-	const Vector2D ca(*points[0], *points[2]);
+	const Vector2D ba(*points[0], *points[1], true);
+	const Vector2D pa(*points[0], point, true);
+	const Vector2D ca(*points[0], *points[2], true);
 	if (signum(ba.crossProduct(pa)) != signum(ba.crossProduct(ca))) {
 		return false;
 	}
-	const Vector2D cb(*points[1], *points[2]);
-	const Vector2D pb(*points[1], point);
+	const Vector2D cb(*points[1], *points[2], true);
+	const Vector2D pb(*points[1], point, true);
 	const Vector2D ab = ba.getOpposite();
 	if (signum(cb.crossProduct(pb)) != signum(cb.crossProduct(ab))) {
 		return false;
 	}
 	const Vector2D ac = ca.getOpposite();
-	const Vector2D pc(*points[2], point);
+	const Vector2D pc(*points[2], point, true);
 	const Vector2D bc = cb.getOpposite();
 	if (signum(ac.crossProduct(pc)) != signum(ac.crossProduct(bc))) {
 		return false;

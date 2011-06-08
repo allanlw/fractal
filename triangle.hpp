@@ -1,22 +1,17 @@
 #ifndef TRIANGLE_HPP_
 #define TRIANGLE_HPP_
 
-class AffineTransform;
+class Triangle;
 
 #include <vector>
 #include <cstddef>
 
 #include "point2d.hpp"
+#include "affinetransform.hpp"
 #include "rectangle.hpp"
 #include "trifit.hpp"
 
 class Triangle {
-public:
-	enum PointMap {
-		P012, P021, P102, P120, P201, P210
-	};
-	static const unsigned char NUM_MAPS = 6;
-	static PointMap pointMapFromInt(unsigned char pMap);
 private:
 	Triangle* nextSibling;
 	Triangle* prevSibling;
@@ -29,9 +24,7 @@ private:
 
 	std::vector<Triangle*> children;
 
-	Triangle* target;
-	TriFit fit;
-	PointMap pointMap;
+	TriFit target;
 
 	void assignPrevChildSibling(Triangle* prev, Triangle* triangle);
 	void assignNextChildSibling(Triangle* next, Triangle* triangle);
@@ -42,16 +35,13 @@ public:
 	void setNextSibling(Triangle* next);
 	void setParent(Triangle* parent);
 	void setPrevSibling(Triangle* prev);
-	void setTarget(Triangle* target, TriFit fit,
-			PointMap pointMap);
+	void setTarget(TriFit fit);
 	Triangle* getNextSibling() const;
 	Triangle* getPrevSibling() const;
 	Triangle* getParent() const;
 	bool isTerminal() const;
-	Triangle* getTarget() const;
-	TriFit getFit() const;
+	TriFit getTarget() const;
 	const std::vector<const Point2D*>* getPoints() const;
-	PointMap getPointMap() const;
 	const std::vector<Triangle*>* getChildren() const;
 	std::size_t getId() const;
 	void setId(std::size_t id);
@@ -62,12 +52,6 @@ public:
 	double getArea() const;
 	bool pointInside(const Point2D& point) const;
 
-	static unsigned char getPoint0(PointMap pointMap);
-	static unsigned char getPoint1(PointMap pointMap);
-	static unsigned char getPoint2(PointMap pointMap);
-
 };
-
-#include "affinetransform.hpp"
 
 #endif /* TRIANGLE_HPP_ */

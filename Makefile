@@ -3,9 +3,13 @@ CXXFLAGS = -Wall
 
 # -msse2 does NOT inline calls to cos,tan, etc. is this bad?
 
-FLAGS_OPT = -msse -msse2 -mfpmath=sse -ffast-math -fno-finite-math-only -O3
+# FLAGS_SSE = -msse -msse2 -mfpmath=sse
+FLAGS_SSE = -march=native
+# FLAGS_MATH = -ffast-math
+
+FLAGS_OPT = $(FLAGS_SSE) $(FLAGS_MATH) -O3
 FLAGS_PROF = -pg $(FLAGS_OPT)
-FLAGS_DEBUG = -g -DDO_CHECKS -Wextra
+FLAGS_DEBUG = -g -Wextra
 FLAGS_OPTDEBUG = $(FLAGS_OPT) -g
 
 CPPSOURCES = $(wildcard *.cpp)

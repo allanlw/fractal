@@ -20,7 +20,7 @@ AffineTransform::AffineTransform(double m00, double m01, double m02,
 }
 
 AffineTransform::AffineTransform(const Triangle * source,
-		const Triangle * target, Triangle::PointMap pointMap) {
+		const Triangle * target, TriFit::PointMap pointMap) {
 	const std::vector<const Point2D*> sourcePoints = *(source->getPoints());
 	const std::vector<const Point2D*> targetPoints = *(target->getPoints());
 	const double s_x[] = { sourcePoints[0]->getX(), sourcePoints[1]->getX(),
@@ -28,12 +28,12 @@ AffineTransform::AffineTransform(const Triangle * source,
 	const double s_y[] = { sourcePoints[0]->getY(), sourcePoints[1]->getY(),
 			sourcePoints[2]->getY() };
 
-	const double d_x[] = { targetPoints[Triangle::getPoint0(pointMap)]->getX(),
-			targetPoints[Triangle::getPoint1(pointMap)]->getX(),
-			targetPoints[Triangle::getPoint2(pointMap)]->getX() };
-	const double d_y[] = { targetPoints[Triangle::getPoint0(pointMap)]->getY(),
-			targetPoints[Triangle::getPoint1(pointMap)]->getY(),
-			targetPoints[Triangle::getPoint2(pointMap)]->getY() };
+	const double d_x[] = { targetPoints[TriFit::getPoint0(pointMap)]->getX(),
+			targetPoints[TriFit::getPoint1(pointMap)]->getX(),
+			targetPoints[TriFit::getPoint2(pointMap)]->getX() };
+	const double d_y[] = { targetPoints[TriFit::getPoint0(pointMap)]->getY(),
+			targetPoints[TriFit::getPoint1(pointMap)]->getY(),
+			targetPoints[TriFit::getPoint2(pointMap)]->getY() };
 
 	const double descriminant = 1.0 / (s_x[2] * (s_y[0] - s_y[1]) + s_x[0] * (s_y[1]
 			- s_y[2]) + s_x[1] * (s_y[2] - s_y[0]));

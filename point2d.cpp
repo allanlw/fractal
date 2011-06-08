@@ -12,21 +12,21 @@ Point2D::Point2D(double x, double y) :
 }
 
 double Point2D::distance(const Point2D& other) const {
-	return sqrt(this->distanceSquared(other));
+	return sqrt(distanceSquared(other));
 }
 
 double Point2D::distanceSquared(const Point2D& other) const {
-	double xdist = (other.x-this->x);
-	double ydist = (other.y - this->y);
+	const double xdist = (other.x-x);
+	const double ydist = (other.y-y);
 	return xdist*xdist+ydist*ydist;
 }
 
 double Point2D::getX() const {
-	return this->x;
+	return x;
 }
 
 double Point2D::getY() const {
-	return this->y;
+	return y;
 }
 
 bool Point2D::operator==(const Point2D &other) const {
