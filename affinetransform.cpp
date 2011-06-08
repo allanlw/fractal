@@ -56,9 +56,9 @@ AffineTransform::AffineTransform(const Triangle * source,
 	AffineTransform(tm00, tm01, tm02, tm10, tm11, tm12);
 }
 
-Point2D AffineTransform::transform(const Point2D* point) const {
-	double x = point->getX();
-	double y = point->getY();
+Point2D AffineTransform::transform(const Point2D& point) const {
+	double x = point.getX();
+	double y = point.getY();
 
 	return Point2D(x * m00 + y * m01 + m02, x * m10 + y * m11 + m12);
 }

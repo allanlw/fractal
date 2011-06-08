@@ -9,7 +9,7 @@ using namespace std;
 
 Triangle::Triangle(const Point2D* point0, const Point2D* point1,
 		const Point2D* point2) :  nextSibling(NULL),prevSibling(NULL), parent(NULL), terminal(true), id(0),points(3), children(0), target(NULL)
-,contrast(0), brightness(0), pointMap(P012) {
+, pointMap(P012) {
 	this->points[0] = point0;
 	this->points[1] = point1;
 	this->points[2] = point2;
@@ -18,11 +18,22 @@ Triangle::Triangle(const Point2D* point0, const Point2D* point1,
 Triangle * Triangle::getNextSibling() const {
 	return this->nextSibling;
 }
+void Triangle::setNextSibling(Triangle* next) {
+	this->nextSibling = next;
+	next->setPrevSibling(this);
+}
 Triangle * Triangle::getPrevSibling() const {
 	return this->prevSibling;
 }
+void Triangle::setPrevSibling(Triangle* prev) {
+	this->prevSibling = prev;
+	prev->setNextSibling(this);
+}
 Triangle * Triangle::getParent() const {
 	return this->parent;
+}
+void Triangle::setParent(Triangle* parent) {
+	this->parent = parent;
 }
 Triangle * Triangle::getTarget() const {
 	return this->target;
@@ -36,14 +47,14 @@ const std::vector<Triangle*>* Triangle::getChildren() const {
 bool Triangle::isTerminal() const {
 	return this->terminal;
 }
-double Triangle::getBrightness() const {
-	return this->brightness;
+TriFit Triangle::getFit() const {
+	return this->fit;
 }
-double Triangle::getContrast() const {
-	return this->contrast;
-}
-unsigned int Triangle::getId() const {
+size_t Triangle::getId() const {
 	return this->id;
+}
+void Triangle::setId(size_t id) {
+	this->id = id;
 }
 Triangle::PointMap Triangle::getPointMap() const {
 	return this->pointMap;
@@ -127,9 +138,9 @@ unsigned char Triangle::getPoint2(PointMap pointMap) {
 }
 
 double Triangle::getArea() const {
-	Vector2D ab (this->points[0], this->points[1]);
-	Vector2D ac (this->points[0], this->points[2]);
-	return abs(ab.crossProduct(&ac))/2.0;
+	Vector2D ab (*points[0], *points[1]);
+	Vector2D ac (*points[0], *points[2]);
+	return abs(ab.crossProduct(ac))/2.0;
 }
 
 Triangle::PointMap Triangle::pointMapFromInt(unsigned char pMap) {
@@ -154,4 +165,64 @@ Triangle::PointMap Triangle::pointMapFromInt(unsigned char pMap) {
 		return P210;
 		break;
 	}
+}
+
+bool Triangle::pointInside(const Point2D& point) const {
+	Vector2D ba(*points[0], *points[1]);
+	Vector2D pa(*points[0], point);
+	Vector2D ca(*points[0], *points[2]);
+	if (signum(ba.crossProduct(pa)) != signum(ba.crossProduct(ca))) {
+		return false;
+	}
+	Vector2D cb(*points[1], *points[2]);
+	Vector2D pb(*points[1], point);
+	Vector2D ab = ba.getOpposite();
+	if (signum(cb.crossProduct(pb)) != signum(cb.crossProduct(ab))) {
+		return false;
+	}
+	Vector2D ac = ca.getOpposite();
+	Vector2D pc(*points[2], point);
+	Vector2D bc = cb.getOpposite();
+	if (signum(ac.crossProduct(pc)) != signum(ac.crossProduct(bc))) {
+		return false;
+	}
+	return true;
+}
+
+void Triangle::subdivide(double r01, double r02, double r12) {
+	Point2D* midpoint01 = new Point2D(points[0]->getX() +
+                               ((points[1]->getX() - points[0]->getX()) * r01),
+                           points[0]->getY() +
+                               ((points[1]->getY() - points[0]->getY()) * r01));
+	Point2D* midpoint02 = new Point2D(points[0]->getX() +
+                               ((points[2]->getX() - points[0]->getX()) * r02),
+                           points[0]->getY() +
+                               ((points[2]->getY() - points[0]->getY()) * r02));
+	Point2D* midpoint12 = new Point2D(points[1]->getX() +
+                               ((points[2]->getX() - points[1]->getX()) * r12),
+                           points[1]->getY() +
+                               ((points[2]->getY() - points[1]->getY()) * r12));
+
+	children.resize(4);
+	children[0] = new Triangle(points[0], midpoint01, midpoint02);
+	children[1] = new Triangle(points[1], midpoint01, midpoint12);
+	children[2] = new Triangle(points[2], midpoint02, midpoint12);
+	children[3] = new Triangle(midpoint01, midpoint02, midpoint12);
+
+	children[0]->setParent(this);
+	children[1]->setParent(this);
+	children[2]->setParent(this);
+	children[3]->setParent(this);
+
+	children[0]->setNextSibling(children[1]);
+
+	children[1]->setNextSibling(children[2]);
+
+	children[2]->setNextSibling(children[3]);
+
+	assignNextChildSibling(nextSibling, children[3]);
+
+	assignPrevChildSibling(prevSibling, children[0]);
+
+	this->terminal = false;
 }

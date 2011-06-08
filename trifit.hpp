@@ -7,6 +7,7 @@ public:
 	double brightness;
 	double error;
 	TriFit(double saturation, double brightness, double error) : saturation(saturation), brightness(brightness), error(error) { };
+	TriFit() : saturation(0), brightness(0), error(0) { };
 };
 
 #endif

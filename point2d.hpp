@@ -11,8 +11,8 @@ public:
 	Point2D(double x, double y);
 	double getX() const;
 	double getY() const;
-	double distance(const Point2D* other) const;
-	double distanceSquared(const Point2D* other) const;
+	double distance(const Point2D& other) const;
+	double distanceSquared(const Point2D& other) const;
 	bool operator==(const Point2D &other) const;
 	std::string str () const;
 };

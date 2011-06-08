@@ -11,13 +11,13 @@ Point2D::Point2D(double x, double y) :
 	x(x), y(y) {
 }
 
-double Point2D::distance(const Point2D* other) const {
+double Point2D::distance(const Point2D& other) const {
 	return sqrt(this->distanceSquared(other));
 }
 
-double Point2D::distanceSquared(const Point2D* other) const {
-	double xdist = (other->x-this->x);
-	double ydist = (other->y - this->y);
+double Point2D::distanceSquared(const Point2D& other) const {
+	double xdist = (other.x-this->x);
+	double ydist = (other.y - this->y);
 	return xdist*xdist+ydist*ydist;
 }
 

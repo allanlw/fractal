@@ -4,9 +4,11 @@
 class AffineTransform;
 
 #include <vector>
+#include <cstddef>
 
 #include "point2d.hpp"
 #include "rectangle.hpp"
+#include "trifit.hpp"
 
 class Triangle {
 public:
@@ -21,15 +23,14 @@ private:
 	Triangle* parent;
 	bool terminal;
 
-	unsigned int id;
+	std::size_t id;
 
 	std::vector<const Point2D*> points;
 
 	std::vector<Triangle*> children;
 
 	Triangle* target;
-	double contrast;
-	double brightness;
+	TriFit fit;
 	PointMap pointMap;
 
 	void assignPrevChildSibling(Triangle* prev, Triangle* triangle);
@@ -41,25 +42,25 @@ public:
 	void setNextSibling(Triangle* next);
 	void setParent(Triangle* parent);
 	void setPrevSibling(Triangle* prev);
-	void setTarget(Triangle* target, double contrast, double brightness,
+	void setTarget(Triangle* target, TriFit fit,
 			PointMap pointMap);
 	Triangle* getNextSibling() const;
 	Triangle* getPrevSibling() const;
 	Triangle* getParent() const;
 	bool isTerminal() const;
 	Triangle* getTarget() const;
-	double getContrast() const;
-	double getBrightness() const;
+	TriFit getFit() const;
 	const std::vector<const Point2D*>* getPoints() const;
 	PointMap getPointMap() const;
 	const std::vector<Triangle*>* getChildren() const;
-	unsigned int getId() const;
+	std::size_t getId() const;
+	void setId(std::size_t id);
 
 	void subdivide(double r01, double r02, double r12);
 	AffineTransform getTransformToTarget() const;
 	Rectangle getBoundingBox() const;
 	double getArea() const;
-	bool pointInside(const Point2D* point) const;
+	bool pointInside(const Point2D& point) const;
 
 	static unsigned char getPoint0(PointMap pointMap);
 	static unsigned char getPoint1(PointMap pointMap);

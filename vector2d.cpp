@@ -21,10 +21,10 @@ void Vector2D::normalize() {
 	}
 }
 
-Vector2D::Vector2D(const Point2D * const origin, const Point2D * const point2) {
-	this->magnitude = origin->distance(point2);
-	this->angle = atan2(point2->getY()
-			- origin->getY(), point2->getX() - origin->getX());
+Vector2D::Vector2D(const Point2D& origin, const Point2D& point2) {
+	this->magnitude = origin.distance(point2);
+	this->angle = atan2(point2.getY()
+			- origin.getY(), point2.getX() - origin.getX());
 	this->normalize();
 }
 
@@ -32,11 +32,11 @@ double Vector2D::getMagnitude() const {
 	return this->magnitude;
 }
 
-double Vector2D::angleBetween(const Vector2D * const other) const {
-	if (this->angle > other->getAngle()) {
-		return this->angle - other->getAngle();
+double Vector2D::angleBetween(const Vector2D & other) const {
+	if (this->angle > other.getAngle()) {
+		return this->angle - other.getAngle();
 	} else {
-		return other->getAngle() - this->angle;
+		return other.getAngle() - this->angle;
 	}
 }
 
@@ -45,12 +45,12 @@ Vector2D::Vector2D(const double magnitude, const double angle) :
 	this->normalize();
 }
 
-Vector2D* Vector2D::getOpposite() const {
-	return new Vector2D(this->magnitude * -1.0, this->angle);
+Vector2D Vector2D::getOpposite() const {
+	return Vector2D(this->magnitude * -1.0, this->angle);
 }
 
-double Vector2D::crossProduct(const Vector2D * const other) const {
-	return this->magnitude * other->getMagnitude() * sin(this->angleBetween(
+double Vector2D::crossProduct(const Vector2D& other) const {
+	return this->magnitude * other.getMagnitude() * sin(this->angleBetween(
 			other));
 }
 

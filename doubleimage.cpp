@@ -2,12 +2,14 @@
 
 #include "mathutils.hpp"
 
+#include "constant.hpp"
+
 using namespace std;
 
 DoubleImage::DoubleImage(gdImagePtr image) : image(image) {
 }
 
-double DoubleImage::valueAt(double x, double y) {
+double DoubleImage::valueAt(double x, double y) const {
 	int _x = (int) round ( x * (double)gdImageSX(image) );
 	int _y = (int) round ( y * (double)gdImageSY(image) );
 	if (_x < 0) {
@@ -27,8 +29,8 @@ double DoubleImage::valueAt(double x, double y) {
 	return (r+g+b)/3.;
 }
 
-double DoubleImage::valueAt(Point2D* point) {
-	return this->valueAt(point->getX(), point->getY());
+double DoubleImage::valueAt(const Point2D& point) const {
+	return this->valueAt(point.getX(), point.getY());
 }
 
 TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap) {
@@ -66,8 +68,8 @@ std::list<double> DoubleImage::getPointsInside(Triangle* t) {
 	for (double x = bounds.getX(); x <= bounds.getX() + bounds.getWidth(); x += 1 / ((double) gdImageSX(image))) {
 		for (double y = bounds.getY(); y <= bounds.getY() + bounds.getHeight(); y += 1/((double)gdImageSY(image))) {
 			Point2D point(x, y);
-			if (t->pointInside(&point)) {
-				results.push_back(valueAt(&point));
+			if (t->pointInside(point)) {
+				results.push_back(valueAt(point));
 			}
 		}
 	}
@@ -85,9 +87,9 @@ std::list<double> DoubleImage::getCorrespondingPoints(Triangle* smaller, Triangl
 	for(double x= bounds.getX(); x <= bounds.getX() + bounds.getWidth(); x += 1/((double)gdImageSX(image))) {
 		for (double y = bounds.getY(); y <= bounds.getY() + bounds.getHeight(); y += ((double)gdImageSY(image))) {
 			Point2D point(x,y);
-			if (larger->pointInside(&point)) {
-				Point2D transformed = trans.transform(&point);
-				results.push_back(valueAt(&transformed));
+			if (larger->pointInside(point)) {
+				Point2D transformed = trans.transform(point);
+				results.push_back(valueAt(transformed));
 			}
 		}
 	}
@@ -106,28 +108,28 @@ void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger,
 	for (double x = bounds.getX(); x <= bounds.getX() + bounds.getWidth(); x += 1/((double)gdImageSX(image))) {
 		for (double y = bounds.getY(); y <= bounds.getY() + bounds.getHeight(); y += 1/((double)gdImageSY(image))) {
 			Point2D point(x,y);
-			if (larger->pointInside(&point)) {
-				largerPoints->push_back(valueAt(&point));
-				Point2D transformed = trans.transform(&point);
-				smallerPoints->push_back(valueAt(&transformed));
+			if (larger->pointInside(point)) {
+				largerPoints->push_back(valueAt(point));
+				Point2D transformed = trans.transform(point);
+				smallerPoints->push_back(valueAt(transformed));
 			}
 		}
 	}
 }
 
-std::list<Point2D*> DoubleImage::getCorners() {
-	list<Point2D*> result;
-	result.push_back(new Point2D(0,0));
-	result.push_back(new Point2D(1,0));
-	result.push_back(new Point2D(1,1));
-	result.push_back(new Point2D(0,1));
+std::vector<Point2D> DoubleImage::getCorners() {
+	vector<Point2D> result;
+	result.push_back(Point2D(0,0));
+	result.push_back(Point2D(1,0));
+	result.push_back(Point2D(1,1));
+	result.push_back(Point2D(0,1));
 	return result;
 }
 
-Triangle* DoubleImage::getBestMatch(Triangle* smaller, TriFit* optimal, Triangle::PointMap* pMap, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end) {
+Triangle* DoubleImage::getBestMatch(Triangle* smaller, TriFit* optimal, Triangle::PointMap* pMap, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
 	Triangle* best = NULL;
 	optimal->error = -1;
-	double maxArea = 4.0*smaller->getArea();
+	double maxArea = MAX_SEARCH_RATIO*smaller->getArea();
 	for(list<Triangle*>::const_iterator it = start; it!=end;it++) {
 		if ((*it)->getArea() > maxArea) {
 			continue;

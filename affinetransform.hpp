@@ -31,7 +31,7 @@ public:
 			double m12);
 	AffineTransform(const Triangle* source, const Triangle* dest,
 			Triangle::PointMap pointMap);
-	Point2D transform(const Point2D* point) const;
+	Point2D transform(const Point2D& point) const;
 	AffineTransform getInverse() const;
 	double getDeterminant() const;
 };

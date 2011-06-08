@@ -8,7 +8,7 @@
 #ifndef MATHUTILS_HPP_
 #define MATHUTILS_HPP_
 
-#include <vector>
+#include <list>
 #include <cmath>
 
 const double PI = std::atan(1) * 4;
@@ -22,5 +22,8 @@ double productZip(std::list<double>::const_iterator start1, std::list<double>::c
 inline bool doublesEqual(double d1, double d2){
 	return std::abs(d1-d2) < ZERO;
 };
+inline double signum(double d) {
+	return (d>0) ? 1.0 : ((d<0) ? -1.0 : 0);
+}
 
 #endif /* MATHUTILS_HPP_ */
