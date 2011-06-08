@@ -9,6 +9,18 @@ using namespace std;
 DoubleImage::DoubleImage(gdImagePtr image) : image(image) {
 }
 
+double DoubleImage::snapXToGrid(double x) const {
+	return round ( x * (double) gdImageSX(image) ) / ((double)gdImageSX(image));
+}
+
+double DoubleImage::snapYToGrid(double y) const {
+	return round (y * (double) gdImageSY(image) ) / ((double) gdImageSY(image));
+}
+
+Point2D DoubleImage::snapToGrid(const Point2D& point) const {
+	return Point2D(snapXToGrid(point.getX()), snapYToGrid(point.getY()));
+}
+
 double DoubleImage::valueAt(double x, double y) const {
 	int _x = (int) round ( x * (double)gdImageSX(image) );
 	int _y = (int) round ( y * (double)gdImageSY(image) );
@@ -60,7 +72,7 @@ TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, Triangle:
 
 	return TriFit(s, o, r);
 }
-
+/*
 std::list<double> DoubleImage::getPointsInside(Triangle* t) {
 	Rectangle bounds = t->getBoundingBox();
 	list<double> results;
@@ -95,6 +107,7 @@ std::list<double> DoubleImage::getCorrespondingPoints(Triangle* smaller, Triangl
 	}
 	return results;
 }
+*/
 
 void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints) {
 	Rectangle bounds = larger->getBoundingBox();
@@ -104,9 +117,12 @@ void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger,
 	}
 
 	AffineTransform trans(larger, smaller, pMap);
-
-	for (double x = bounds.getX(); x <= bounds.getX() + bounds.getWidth(); x += 1/((double)gdImageSX(image))) {
-		for (double y = bounds.getY(); y <= bounds.getY() + bounds.getHeight(); y += 1/((double)gdImageSY(image))) {
+	double xMax = snapXToGrid(bounds.getX() + bounds.getWidth());
+	double yMax = snapYToGrid(bounds.getY() + bounds.getHeight());
+	double xInc = 1.0 / ((double)gdImageSX(image));
+	double yInc = 1.0 / ((double)gdImageSY(image));
+	for (double x = snapXToGrid(bounds.getX()); x <= xMax; x += xInc) {
+		for (double y = snapYToGrid(bounds.getY()); y <= yMax; y += yInc) {
 			Point2D point(x,y);
 			if (larger->pointInside(point)) {
 				largerPoints->push_back(valueAt(point));
@@ -131,7 +147,7 @@ Triangle* DoubleImage::getBestMatch(Triangle* smaller, TriFit* optimal, Triangle
 	optimal->error = -1;
 	double maxArea = MAX_SEARCH_RATIO*smaller->getArea();
 	for(list<Triangle*>::const_iterator it = start; it!=end;it++) {
-		if ((*it)->getArea() > maxArea) {
+		if ((*it)->getArea() > maxArea || smaller == *it) {
 			continue;
 		}
 		for (unsigned char i = 0; i < Triangle::NUM_MAPS; i++) {

@@ -20,14 +20,14 @@ Triangle * Triangle::getNextSibling() const {
 }
 void Triangle::setNextSibling(Triangle* next) {
 	this->nextSibling = next;
-	next->setPrevSibling(this);
+	next->prevSibling = this;
 }
 Triangle * Triangle::getPrevSibling() const {
 	return this->prevSibling;
 }
 void Triangle::setPrevSibling(Triangle* prev) {
 	this->prevSibling = prev;
-	prev->setNextSibling(this);
+	prev->nextSibling = this;
 }
 Triangle * Triangle::getParent() const {
 	return this->parent;
@@ -37,6 +37,11 @@ void Triangle::setParent(Triangle* parent) {
 }
 Triangle * Triangle::getTarget() const {
 	return this->target;
+}
+void Triangle::setTarget(Triangle* target, TriFit fit, PointMap pMap) {
+	this->target = target;
+	this->fit = fit;
+	this->pointMap = pMap;
 }
 const std::vector<const Point2D*>* Triangle::getPoints() const {
 	return &(this->points);
@@ -168,21 +173,21 @@ Triangle::PointMap Triangle::pointMapFromInt(unsigned char pMap) {
 }
 
 bool Triangle::pointInside(const Point2D& point) const {
-	Vector2D ba(*points[0], *points[1]);
-	Vector2D pa(*points[0], point);
-	Vector2D ca(*points[0], *points[2]);
+	const Vector2D ba(*points[0], *points[1]);
+	const Vector2D pa(*points[0], point);
+	const Vector2D ca(*points[0], *points[2]);
 	if (signum(ba.crossProduct(pa)) != signum(ba.crossProduct(ca))) {
 		return false;
 	}
-	Vector2D cb(*points[1], *points[2]);
-	Vector2D pb(*points[1], point);
-	Vector2D ab = ba.getOpposite();
+	const Vector2D cb(*points[1], *points[2]);
+	const Vector2D pb(*points[1], point);
+	const Vector2D ab = ba.getOpposite();
 	if (signum(cb.crossProduct(pb)) != signum(cb.crossProduct(ab))) {
 		return false;
 	}
-	Vector2D ac = ca.getOpposite();
-	Vector2D pc(*points[2], point);
-	Vector2D bc = cb.getOpposite();
+	const Vector2D ac = ca.getOpposite();
+	const Vector2D pc(*points[2], point);
+	const Vector2D bc = cb.getOpposite();
 	if (signum(ac.crossProduct(pc)) != signum(ac.crossProduct(bc))) {
 		return false;
 	}
@@ -225,4 +230,26 @@ void Triangle::subdivide(double r01, double r02, double r12) {
 	assignPrevChildSibling(prevSibling, children[0]);
 
 	this->terminal = false;
+}
+
+void Triangle::assignNextChildSibling(Triangle* next, Triangle* t) {
+	if (next != NULL) {
+		const vector<Triangle*>* nextChildren = next->getChildren();
+		if (nextChildren != NULL && nextChildren->size() > 0) {
+			t->setNextSibling((*nextChildren)[0]);
+		} else {
+			assignNextChildSibling(next->getNextSibling(), t);
+		}
+	}
+}
+
+void Triangle::assignPrevChildSibling(Triangle* prev, Triangle* t) {
+	if (prev != NULL) {
+		const vector<Triangle*>* prevChildren = prev->getChildren();
+		if (prevChildren != NULL && prevChildren->size() > 0) {
+			t->setPrevSibling((*prevChildren)[prevChildren->size()-1]);
+		} else {
+			assignPrevChildSibling(prev->getPrevSibling(), t);
+		}
+	}
 }

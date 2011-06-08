@@ -18,11 +18,14 @@ const std::list<Triangle*>* TriangleTree::getUnassigned() const {
 }
 
 Triangle* TriangleTree::assignOne() {
+	if (unassigned.size() == 0) {
+		return NULL;
+	}
 	Triangle* next = unassigned.front();
-	unassigned.pop_front();
 	if (next == NULL) {
 		return NULL;
 	}
+	unassigned.pop_front();
 	lastId++;
 	next->setId(this->lastId);
 	if (next->getArea() > MIN_SEARCH_AREA) {
@@ -35,7 +38,7 @@ Triangle* TriangleTree::assignOne() {
 	insert_iterator<list<Triangle*> > it(above, above.end());
 	getAllAbove(next, it);
 	Triangle* best = image.getBestMatch(next, &fit, &map, above.begin(), above.end());
-	if (fit.error < ERROR_CUTOFF) {
+	if (fit.error < ERROR_CUTOFF && fit.error >= 0) {
 		next->setTarget(best, fit, map);
 	} else {
 		subdivide(next);

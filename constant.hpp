@@ -3,11 +3,11 @@
 
 
 #ifndef ERROR_CUTOFF
-#define ERROR_CUTOFF 200.
+#define ERROR_CUTOFF 10
 #endif
 
 #ifndef MIN_SEARCH_AREA
-#define MIN_SEARCH_AREA 1.0 / (32.0 * 32.0)
+#define MIN_SEARCH_AREA 1.0/16
 #endif
 
 #ifndef MAX_SEARCH_RATIO
