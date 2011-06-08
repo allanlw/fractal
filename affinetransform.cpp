@@ -15,8 +15,7 @@ AffineTransform::AffineTransform(double m00, double m01, double m02,
 }
 
 AffineTransform::AffineTransform(const Triangle * source,
-		const Triangle * target, Triangle::PointMap pointMap)
-		throw (InvalidTransformException) {
+		const Triangle * target, Triangle::PointMap pointMap) {
 	const std::vector<const Point2D*> sourcePoints = *(source->getPoints());
 	const std::vector<const Point2D*> targetPoints = *(target->getPoints());
 	double s_x[] = { sourcePoints[0]->getX(), sourcePoints[1]->getX(),
@@ -35,7 +34,7 @@ AffineTransform::AffineTransform(const Triangle * source,
 			- s_y[2]) + s_x[1] * (s_y[2] - s_y[0]));
 
 	if (descriminant < ZERO) {
-		throw new InvalidTransformException();
+		throw InvalidTransformException();
 	}
 
 	double tm00 = (d_x[0] * (s_y[1] - s_y[2]) + d_x[1] * (s_y[2] - s_y[0])
@@ -57,25 +56,24 @@ AffineTransform::AffineTransform(const Triangle * source,
 	AffineTransform(tm00, tm01, tm02, tm10, tm11, tm12);
 }
 
-Point2D * AffineTransform::transform(const Point2D* point) const {
+Point2D AffineTransform::transform(const Point2D* point) const {
 	double x = point->getX();
 	double y = point->getY();
 
-	return new Point2D(x * m00 + y * m01 + m02, x * m10 + y * m11 + m12);
+	return Point2D(x * m00 + y * m01 + m02, x * m10 + y * m11 + m12);
 }
 
 double AffineTransform::getDeterminant() const {
 	return m00 * m11 - m01 * m10;
 }
 
-AffineTransform* AffineTransform::getInverse() const
-		throw (InvalidTransformException) {
+AffineTransform AffineTransform::getInverse() const {
 	double det = this->getDeterminant();
 	if (det < ZERO) {
-		throw new InvalidTransformException();
+		throw InvalidTransformException();
 	}
 
-	return new AffineTransform(m11 / det, // m00
+	return AffineTransform(m11 / det, // m00
 			-m10 / det, // m10
 			-m01 / det, // m01
 			m00 / det, // m11

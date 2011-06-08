@@ -49,7 +49,7 @@ Triangle::PointMap Triangle::getPointMap() const {
 	return this->pointMap;
 }
 
-Rectangle* Triangle::getBoundingBox() const {
+Rectangle Triangle::getBoundingBox() const {
 	double maxx = this->points[0]->getX();
 	double maxy = this->points[0]->getY();
 	double minx = maxx;
@@ -68,10 +68,10 @@ Rectangle* Triangle::getBoundingBox() const {
 			miny = this->points[i]->getY();
 		}
 	}
-	return new Rectangle(minx, miny, maxx - minx, maxy - miny);
+	return Rectangle(minx, miny, maxx - minx, maxy - miny);
 }
 
-short int Triangle::getPoint0(PointMap pointMap) {
+unsigned char Triangle::getPoint0(PointMap pointMap) {
 	switch (pointMap) {
 	case P012:
 	case P021:
@@ -89,7 +89,7 @@ short int Triangle::getPoint0(PointMap pointMap) {
 		return -1;
 	}
 }
-short int Triangle::getPoint1(PointMap pointMap) {
+unsigned char Triangle::getPoint1(PointMap pointMap) {
 	switch (pointMap) {
 	case P102:
 	case P201:
@@ -107,7 +107,7 @@ short int Triangle::getPoint1(PointMap pointMap) {
 		return -1;
 	}
 }
-short int Triangle::getPoint2(PointMap pointMap) {
+unsigned char Triangle::getPoint2(PointMap pointMap) {
 	switch (pointMap) {
 	case P120:
 	case P210:
@@ -130,4 +130,28 @@ double Triangle::getArea() const {
 	Vector2D ab (this->points[0], this->points[1]);
 	Vector2D ac (this->points[0], this->points[2]);
 	return abs(ab.crossProduct(&ac))/2.0;
+}
+
+Triangle::PointMap Triangle::pointMapFromInt(unsigned char pMap) {
+	switch(pMap) {
+	default:
+	case 0:
+		return P012;
+		break;
+	case 1:
+		return P021;
+		break;
+	case 2:
+		return P102;
+		break;
+	case 3:
+		return P120;
+		break;
+	case 4:
+		return P201;
+		break;
+	case 5:
+		return P210;
+		break;
+	}
 }

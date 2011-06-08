@@ -4,6 +4,7 @@
 class AffineTransform;
 
 #include <vector>
+
 #include "point2d.hpp"
 #include "rectangle.hpp"
 
@@ -12,6 +13,8 @@ public:
 	enum PointMap {
 		P012, P021, P102, P120, P201, P210
 	};
+	static const unsigned char NUM_MAPS = 6;
+	static PointMap pointMapFromInt(unsigned char pMap);
 private:
 	Triangle* nextSibling;
 	Triangle* prevSibling;
@@ -51,16 +54,16 @@ public:
 	PointMap getPointMap() const;
 	const std::vector<Triangle*>* getChildren() const;
 	unsigned int getId() const;
-	
+
 	void subdivide(double r01, double r02, double r12);
-	AffineTransform* getTransformToTarget() const;
-	Rectangle* getBoundingBox() const;
+	AffineTransform getTransformToTarget() const;
+	Rectangle getBoundingBox() const;
 	double getArea() const;
 	bool pointInside(const Point2D* point) const;
 
-	static short int getPoint0(PointMap pointMap);
-	static short int getPoint1(PointMap pointMap);
-	static short int getPoint2(PointMap pointMap);
+	static unsigned char getPoint0(PointMap pointMap);
+	static unsigned char getPoint1(PointMap pointMap);
+	static unsigned char getPoint2(PointMap pointMap);
 
 };
 
