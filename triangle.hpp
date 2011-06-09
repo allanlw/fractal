@@ -54,6 +54,7 @@ public:
 	bool pointInside(const Point2D& point) const;
 	bool pointInsideSameSide(const Point2D& point) const;
 	bool pointInsideBarycentric(const Point2D& point) const;
+	Point2D calcCenteroid() const;
 
 	std::string str() const;
 };

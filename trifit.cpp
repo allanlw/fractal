@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "trifit.hpp"
 
 using namespace std;
@@ -102,6 +104,30 @@ TriFit& TriFit::operator=(const TriFit& other) {
 	return *this;
 }
 
-double TriFit::getError() const {
-	return error;
+string TriFit::str() const {
+	ostringstream st;
+	st << "[s:" << saturation << ",o:" << brightness;
+	st << ",r:" << error << ",p:";
+	switch (pMap) {
+	case P012:
+		st << "012";
+		break;
+	case P021:
+		st << "021";
+		break;
+	case P102:
+		st << "102";
+		break;
+	case P120:
+		st << "120";
+		break;
+	case P201:
+		st << "201";
+		break;
+	case P210:
+		st << "210";
+		break;
+	}
+	st << ",t" << best->str() << "]";
+	return st.str();
 }

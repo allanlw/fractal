@@ -21,11 +21,10 @@ int main(int argc, char* argv[]) {
 		Triangle* cur = tree.assignOne();
 		if (cur == NULL) break;
 		cout << tree.getLastId();
-		cout << " - "<< (cur->isTerminal()?"Termainal":"Not Termainal");
+		cout << " - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
 		if (cur->isTerminal()) {
-			cout << " Error: " << cur->getTarget().getError();
+			cout << " Error: " << cur->getTarget().error << endl;
 		}
-		cout << endl;
 	}
 	return 0;
 }

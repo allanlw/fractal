@@ -40,10 +40,10 @@ public:
 		tri3 = Triangle(Point2D(2,2), Point2D(4,2), Point2D(2,4));
 		tri4 = Triangle(point2, point3, point6);
 
-		a1 = AffineTransform(tri1, tri4, TriFit::P012);
-		a2 = AffineTransform(tri4, tri1, TriFit::P012);
-		a3 = AffineTransform(tri1, tri3, TriFit::P012);
-		a4 = AffineTransform(tri3, tri1, TriFit::P012);
+		a1 = AffineTransform(tri1, tri4, TriFit::P021);
+		a2 = AffineTransform(tri4, tri1, TriFit::P201);
+		a3 = AffineTransform(tri1, tri3, TriFit::P210);
+		a4 = AffineTransform(tri3, tri1, TriFit::P102);
 	}
 	void tearDown() {
 	}
@@ -55,6 +55,10 @@ public:
 		CPPUNIT_ASSERT(tri1.pointInside(a2.transform(p1)));
 		CPPUNIT_ASSERT(tri3.pointInside(a3.transform(p1)));
 		CPPUNIT_ASSERT(tri1.pointInside(a4.transform(Point2D(2.5,2.5))));
+		CPPUNIT_ASSERT(tri4.pointInside(a1.transform(tri1.calcCenteroid())));
+		CPPUNIT_ASSERT(tri1.pointInside(a2.transform(tri4.calcCenteroid())));
+		CPPUNIT_ASSERT(tri3.pointInside(a3.transform(tri1.calcCenteroid())));
+		CPPUNIT_ASSERT(tri1.pointInside(a4.transform(tri3.calcCenteroid())));
 	}
 	static CppUnit::Test *suite() {
 		CppUnit::TestSuite *suiteOfTests = new CppUnit::TestSuite( "AffineTransformTest" );

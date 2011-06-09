@@ -8,9 +8,7 @@
 
 using namespace std;
 
-Vector2D::Vector2D(const Vector2D& other) {
-	angle = other.angle;
-	magnitude = other.magnitude;
+Vector2D::Vector2D(const Vector2D& other) : magnitude(other.magnitude), angle(other.angle) {
 }
 
 void Vector2D::normalize() {
@@ -26,14 +24,8 @@ void Vector2D::normalize() {
 	}
 }
 
-Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) {
-	if (!unit) {
-		magnitude = origin.distance(point2);
-	} else {
-		magnitude = 1.0;
-	}
-	angle = atan2(point2.getY() - origin.getY(),
-	                    point2.getX() - origin.getX());
+Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) : 
+magnitude(unit?1.0:origin.distance(point2)), angle(atan2(point2.getY() - origin.getY(), point2.getX() - origin.getX())) {
 	normalize();
 }
 

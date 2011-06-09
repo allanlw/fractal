@@ -21,6 +21,7 @@ AffineTransform::AffineTransform(double m00, double m01, double m02,
 
 AffineTransform::AffineTransform(const Triangle& source,
 		const Triangle& target, TriFit::PointMap pointMap) {
+
 	const std::vector<Point2D> sourcePoints = *(source.getPoints());
 	const std::vector<Point2D> targetPoints = *(target.getPoints());
 	double s_x[] = { sourcePoints[0].getX(), sourcePoints[1].getX(),
@@ -42,23 +43,21 @@ AffineTransform::AffineTransform(const Triangle& source,
 		throw InvalidTransformException();
 	}
 
-	double tm00 = (d_x[0] * (s_y[1] - s_y[2]) + d_x[1] * (s_y[2] - s_y[0])
+	m00 = (d_x[0] * (s_y[1] - s_y[2]) + d_x[1] * (s_y[2] - s_y[0])
 			+ d_x[2] * (s_y[0] - s_y[1])) * descriminant;
-	double tm01 = (d_x[0] * (s_x[2] - s_x[1]) + d_x[1] * (s_x[0] - s_x[2])
+	m01 = (d_x[0] * (s_x[2] - s_x[1]) + d_x[1] * (s_x[0] - s_x[2])
 			+ d_x[2] * (s_x[1] - s_x[0])) * descriminant;
-	double tm02 = (d_x[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_x[1]
+	m02 = (d_x[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_x[1]
 			* (s_x[2] * s_y[0] - s_x[0] * s_y[2]) + d_x[2] * (s_x[0] * s_y[1]
 			- s_x[1] * s_y[0])) * descriminant;
 
-	double tm10 = (d_y[0] * (s_y[1] - s_y[2]) + d_y[1] * (s_y[2] - s_y[0])
+	m10 = (d_y[0] * (s_y[1] - s_y[2]) + d_y[1] * (s_y[2] - s_y[0])
 			+ d_y[2] * (s_y[0] - s_y[1])) * descriminant;
-	double tm11 = (d_y[0] * (s_x[2] - s_x[1]) + d_y[1] * (s_x[0] - s_x[2])
+	m11 = (d_y[0] * (s_x[2] - s_x[1]) + d_y[1] * (s_x[0] - s_x[2])
 			+ d_y[2] * (s_x[1] - s_x[0])) * descriminant;
-	double tm12 = (d_y[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_y[1]
+	m12 = (d_y[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_y[1]
 			* (s_x[2] * s_y[0] - s_x[0] * s_y[2]) + d_y[2] * (s_x[0] * s_y[1]
 			- s_x[1] * s_y[0])) * descriminant;
-
-	AffineTransform(tm00, tm01, tm02, tm10, tm11, tm12);
 }
 
 Point2D AffineTransform::transform(const Point2D& point) const {

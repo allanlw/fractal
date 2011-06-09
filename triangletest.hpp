@@ -20,7 +20,7 @@ private:
 	Point2D *point4;
 	Point2D *point5;
 	Point2D *point6;
-	
+
 	Triangle *tri1;
 	Triangle *tri2;
 	Triangle *tri3;
@@ -33,7 +33,7 @@ public:
 		point4 = new Point2D(100, 100);
 		point5 = new Point2D(-PI, PI);
 		point6 = new Point2D(-PI, -PI);
-		
+
 		tri1 = new Triangle(*point1, *point2, *point3);
 		tri2 = new Triangle(*point1, *point4, *point5);
 		tri3 = new Triangle(*point2, *point3, *point4);
@@ -89,6 +89,12 @@ public:
 		CPPUNIT_ASSERT(tri4->pointInside(p3));
 		CPPUNIT_ASSERT(tri4->pointInside(p1));
 	}
+	void testCalcCenteroid() {
+		CPPUNIT_ASSERT(tri1->pointInside(tri1->calcCenteroid()));
+		CPPUNIT_ASSERT(tri2->pointInside(tri2->calcCenteroid()));
+		CPPUNIT_ASSERT(tri3->pointInside(tri3->calcCenteroid()));
+		CPPUNIT_ASSERT(tri4->pointInside(tri4->calcCenteroid()));
+	}
 	static CppUnit::Test *suite() {
 		CppUnit::TestSuite *suiteOfTests = new CppUnit::TestSuite( "TriangleTest" );
 		suiteOfTests->addTest( new CppUnit::TestCaller<TriangleTest>(
@@ -101,6 +107,7 @@ public:
 									   "testBoundingBox",
 									   &TriangleTest::testBoundingBox ));
 		suiteOfTests->addTest(new CppUnit::TestCaller<TriangleTest>("testPointInside", &TriangleTest::testPointInside));
+		suiteOfTests->addTest(new CppUnit::TestCaller<TriangleTest>("testCalcCenteroid", &TriangleTest::testCalcCenteroid));
 		return suiteOfTests;
 	}
 };

@@ -2,6 +2,7 @@
 #define TRIFIT_HPP_
 
 #include <cstddef>
+#include <string>
 
 class TriFit {
 public:
@@ -9,20 +10,21 @@ public:
 		P012, P021, P102, P120, P201, P210
 	};
 	static const unsigned char NUM_MAPS = 6;
-private:
+
 	double saturation;
 	double brightness;
 	double error;
 	PointMap pMap;
 	class Triangle* best;
-public:
+
 	TriFit(double saturation, double brightness, double error, PointMap pMap, class Triangle* best);
 	TriFit(const TriFit& other);
 	explicit TriFit();
 
 	TriFit& operator=(const TriFit& other);
 
-	double getError() const;
+
+	std::string str() const;
 
 	static PointMap pointMapFromInt(std::size_t pMap);
 	static unsigned char getPoint0(PointMap pMap);

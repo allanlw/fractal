@@ -200,3 +200,9 @@ string Triangle::str() const {
 	s << points[2].str() << ")";
 	return s.str();
 }
+
+Point2D Triangle::calcCenteroid() const {
+	double x = (points[0].getX() + points[1].getX() + points[2].getX())/3;
+	double y = (points[0].getY() + points[1].getY() + points[2].getY())/3;
+	return Point2D(x,y);
+}

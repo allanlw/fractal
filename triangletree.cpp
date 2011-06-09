@@ -1,5 +1,7 @@
 #include "triangletree.hpp"
 
+#include <iostream>
+
 using namespace std;
 
 TriangleTree::TriangleTree(DoubleImage image) : head(NULL), image(image), lastId(0) {
@@ -26,20 +28,22 @@ Triangle* TriangleTree::assignOne() {
 		return NULL;
 	}
 	unassigned.pop_front();
-	lastId++;
-	next->setId(this->lastId);
+	next->setId(lastId++);
 	if (next->getArea() > MIN_SEARCH_AREA) {
 		subdivide(next);
-		return next;
-	}
-	list<Triangle*> above;
-	insert_iterator<list<Triangle*> > it(above, above.end());
-	getAllAbove(next, it);
-	TriFit best = image.getBestMatch(next, above.begin(), above.end());
-	if (best.getError() < ERROR_CUTOFF && best.getError() >= 0) {
-		next->setTarget(best);
 	} else {
-		subdivide(next);
+		list<Triangle*> above(0);
+		insert_iterator<list<Triangle*> > it(above, above.begin());
+		getAllAbove(next, it);
+		cout << above.size() << endl;
+		list<Triangle*>::const_iterator begin = above.begin();
+		list<Triangle*>::const_iterator end = above.end();
+		TriFit best = image.getBestMatch(next, begin, end);
+		if (best.error < ERROR_CUTOFF && best.error >= 0) {
+			next->setTarget(best);
+		} else {
+			subdivide(next);
+		}
 	}
 	return next;
 }
@@ -52,22 +56,17 @@ void TriangleTree::subdivide(Triangle* t) {
 }
 
 void TriangleTree::getAllAbove(Triangle* t, insert_iterator<list<Triangle*> >& it) {
-	if (t != NULL) {
-		Triangle* parent = t->getParent();
-		if (parent != NULL) {
-			getAllSiblings(parent, it);
-			getAllAbove(parent, it);
-		}
+	Triangle* parent = t->getParent();
+	if (parent != NULL) {
+		*it = parent;
+		getAllSiblings(parent, it);
+		getAllAbove(parent, it);
 	}
 }
 
 void TriangleTree::getAllSiblings(Triangle* t, insert_iterator<list<Triangle*> >& it) {
-	if (t->getNextSibling() != NULL) {
-		getAllNextSiblings(t, it);
-	}
-	if (t->getPrevSibling() != NULL) {
-		getAllPrevSiblings(t, it);
-	}
+	getAllNextSiblings(t, it);
+	getAllPrevSiblings(t, it);
 }
 
 void TriangleTree::getAllNextSiblings(Triangle* t, insert_iterator<list<Triangle*> >& it) {

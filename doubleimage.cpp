@@ -35,10 +35,10 @@ double DoubleImage::valueAt(double x, double y) const {
 	} else if (_y >= gdImageSY(image) ) {
 		_y = gdImageSY(image);
 	}
-	int c = gdImageGetPixel(image, x, y);
-	double r = gdImageRed(image, c);
-	double g = gdImageGreen(image, c);
-	double b = gdImageBlue(image, c);
+	int c = gdImageGetPixel(image, _x, _y);
+	double r = double(gdImageRed(image, c)) / double(gdRedMax);
+	double g = double(gdImageGreen(image, c)) / double(gdGreenMax);
+	double b = double(gdImageBlue(image, c)) / double(gdBlueMax);
 	return (r+g+b)/3.;
 }
 
@@ -47,9 +47,14 @@ double DoubleImage::valueAt(const Point2D& point) const {
 }
 
 TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap) {
+
 	list<double> targetPoints(0);
 	list<double> rangePoints(0);
-	getInsideAndCorresponding(smaller, larger, pMap, insert_iterator<list<double> >(rangePoints, rangePoints.begin()), insert_iterator<list<double> >(targetPoints, targetPoints.begin()));
+
+	insert_iterator<list<double> > rangeInserter(rangePoints, rangePoints.begin());
+	insert_iterator<list<double> > domainInserter(targetPoints, targetPoints.begin());
+
+	getInsideAndCorresponding(smaller, larger, pMap, rangeInserter, domainInserter);
 
 	if (targetPoints.size() != rangePoints.size()) {
 		throw logic_error("Target and Range Points not the same size.");
@@ -67,64 +72,28 @@ TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::P
 
 	double o = (rangeSum - (s * domainSum)) / (n * n);
 
-	double r = ((rangeSquaresSum + (s * (s * domainSquaresSum - 2.0 *
-			productSum + 2.0 * o * domainSum)) + (o * (o * n
-			* n - 2.0 * rangeSum))));
-	cout << n << ","<< "," << domainSum << "," << rangeSum << ",";
-	cout << domainSquaresSum << "," << rangeSquaresSum << "," << productSum << ",";
-	cout <<s << "," << o << "," << r << endl;
+	double r = ((rangeSquaresSum + (s * ((s * domainSquaresSum) - (2.0 *
+			productSum) + (2.0 * o * domainSum))) + (o * ((o * n
+			* n) - (2.0 * rangeSum)))));
+
 	TriFit result(s,o,r,pMap,larger);
+
+	cout << "\t" << result.str() << endl;
 
 	return result;
 }
-
-/*
-std::list<double> DoubleImage::getPointsInside(Triangle* t) {
-	Rectangle bounds = t->getBoundingBox();
-	list<double> results;
-
-	for (double x = bounds.getX(); x <= bounds.getX() + bounds.getWidth(); x += 1 / ((double) gdImageSX(image))) {
-		for (double y = bounds.getY(); y <= bounds.getY() + bounds.getHeight(); y += 1/((double)gdImageSY(image))) {
-			Point2D point(x, y);
-			if (t->pointInside(point)) {
-				results.push_back(valueAt(point));
-			}
-		}
-	}
-
-	return results;
-}
-
-std::list<double> DoubleImage::getCorrespondingPoints(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap) {
-	Rectangle bounds = larger->getBoundingBox();
-
-	AffineTransform trans(larger, smaller, pMap);
-
-	list<double> results;
-
-	for(double x= bounds.getX(); x <= bounds.getX() + bounds.getWidth(); x += 1/((double)gdImageSX(image))) {
-		for (double y = bounds.getY(); y <= bounds.getY() + bounds.getHeight(); y += ((double)gdImageSY(image))) {
-			Point2D point(x,y);
-			if (larger->pointInside(point)) {
-				Point2D transformed = trans.transform(point);
-				results.push_back(valueAt(transformed));
-			}
-		}
-	}
-	return results;
-}
-*/
 
 void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, insert_iterator<list<double> > smallerInserter, insert_iterator<list<double> > largerInserter) {
 	Rectangle bounds = larger->getBoundingBox();
 
 	AffineTransform trans(*larger, *smaller, pMap);
+
 	double xMax = snapXToGrid(bounds.getRight());
 	double yMax = snapYToGrid(bounds.getBottom());
-	double xInc = 1.0 / ((double)gdImageSX(image));
-	double yInc = 1.0 / ((double)gdImageSY(image));
+	double xInc = 1.0 / double(gdImageSX(image));
+	double yInc = 1.0 / double(gdImageSY(image));
 
-	cout << trans.str() << endl;
+	cout << "Mapping " << smaller->str() << " to " << larger->str() << endl;
 
 	for (double x = snapXToGrid(bounds.getLeft()); x <= xMax; x += xInc) {
 		Point2D top(-1,-1);
@@ -176,14 +145,14 @@ std::vector<Point2D> DoubleImage::getCorners() {
 TriFit DoubleImage::getBestMatch(Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
 	TriFit result(0, 0, -1, TriFit::P012, NULL);
 	double maxArea = MAX_SEARCH_RATIO*smaller->getArea();
-	for(list<Triangle*>::const_iterator it = start; it!=end;it++) {
-		if ((*it)->getArea() > maxArea || smaller == *it) {
-			continue;
-		}
+	for(; start != end; start++) {
+//		if ((*start)->getArea() > maxArea || smaller == *start) {
+//			continue;
+//		}
 		for (unsigned char i = 0; i < TriFit::NUM_MAPS; i++) {
 			TriFit::PointMap map = TriFit::pointMapFromInt(i);
-			TriFit f(getOptimalFit(smaller,*it, map));
-			if (f.getError() < result.getError() || result.getError() < 0) {
+			TriFit f(getOptimalFit(smaller,*start, map));
+			if (f.error < result.error || result.error < 0) {
 				result = f;
 			}
 		}
