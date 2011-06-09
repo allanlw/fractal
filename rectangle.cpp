@@ -31,9 +31,9 @@ double Rectangle::getArea() const {
 	return this->h*this->w;
 }
 
-bool Rectangle::pointInside(const Point2D* point) const {
-	double px = point->getX();
-	double py = point->getY();
+bool Rectangle::pointInside(const Point2D& point) const {
+	double px = point.getX();
+	double py = point.getY();
 	return (((px >= this->x || doublesEqual(px, this->x)) &&
 			 (px <= this->x+this->w || doublesEqual(px, this->x+this->w))) &&
 			((py >= this->y || doublesEqual(py, this->y)) &&
@@ -44,4 +44,17 @@ std::string Rectangle::str () const {
 	std::ostringstream s;
 	s << "(X:" << this->x << ",Y:" << this->y << ", W:" << this->w << ", H:" << this->h << ")";
 	return s.str();
+}
+
+double Rectangle::getTop() const {
+	return y;
+}
+double Rectangle::getLeft() const {
+	return x;
+}
+double Rectangle::getBottom() const {
+	return y+h;
+}
+double Rectangle::getRight() const {
+	return x+w;
 }

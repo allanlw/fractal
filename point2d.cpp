@@ -11,6 +11,11 @@ Point2D::Point2D(double x, double y) :
 	x(x), y(y) {
 }
 
+Point2D::Point2D(const Point2D& other) {
+	x = other.x;
+	y = other.y;
+}
+
 double Point2D::distance(const Point2D& other) const {
 	return sqrt(distanceSquared(other));
 }
@@ -37,4 +42,14 @@ std::string Point2D::str () const {
 	std::ostringstream s;
 	s << "(" << this->x << ", " << this->y << ")";
 	return s.str();
+}
+
+Vector2D Point2D::operator-(const Point2D& other) const{
+	return Vector2D(other, *this);
+}
+
+Point2D& Point2D::operator=(const Point2D& other) {
+	x = other.x;
+	y = other.y;
+	return *this;
 }

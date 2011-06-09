@@ -2,6 +2,14 @@
 
 using namespace std;
 
+TriFit::TriFit(double saturation, double brightness, double error, TriFit::PointMap pMap, Triangle* best) :
+saturation(saturation), brightness(brightness), error(error), pMap(pMap), best(best) { }
+
+TriFit::TriFit(const TriFit& other) : saturation(other.saturation), brightness(other.brightness), error(other.error),
+pMap(other.pMap), best(other.best) { }
+
+TriFit::TriFit() : saturation(0), brightness(0), error(-1), pMap(P012), best(NULL) { }
+
 TriFit::PointMap TriFit::pointMapFromInt(std::size_t pMap) {
 	switch(pMap) {
 	default:
@@ -81,4 +89,19 @@ unsigned char TriFit::getPoint2(PointMap pointMap) {
 	default:
 		return -1;
 	}
+}
+
+TriFit& TriFit::operator=(const TriFit& other) {
+	if (this != &other) {
+		saturation = other.saturation;
+		brightness = other.brightness;
+		error = other.error;
+		best = other.best;
+		pMap = other.pMap;
+	}
+	return *this;
+}
+
+double TriFit::getError() const {
+	return error;
 }

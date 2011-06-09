@@ -8,14 +8,19 @@
 
 using namespace std;
 
+Vector2D::Vector2D(const Vector2D& other) {
+	angle = other.angle;
+	magnitude = other.magnitude;
+}
+
 void Vector2D::normalize() {
-	while (this->angle < 0) {
+	while (angle < 0) {
 		angle += PI * 2;
 	}
-	while (this->angle > PI * 2) {
+	while (angle > PI * 2) {
 		angle -= PI * 2;
 	}
-	if (this->angle >= PI) {
+	if (angle >= PI) {
 		magnitude *= -1;
 		angle -= PI;
 	}
@@ -33,16 +38,16 @@ Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) {
 }
 
 double Vector2D::getMagnitude() const {
-	return this->magnitude;
+	return magnitude;
 }
 
 double Vector2D::angleBetween(const Vector2D & other) const {
-	return abs(other.getAngle() - angle);
+	return abs(other.angle - angle);
 }
 
 Vector2D::Vector2D(const double magnitude, const double angle) :
 	magnitude(magnitude), angle(angle) {
-	this->normalize();
+	normalize();
 }
 
 Vector2D Vector2D::getOpposite() const {
@@ -50,8 +55,15 @@ Vector2D Vector2D::getOpposite() const {
 }
 
 double Vector2D::crossProduct(const Vector2D& other) const {
-	return magnitude * other.getMagnitude() * sin(angleBetween(
-			other));
+	return magnitude * other.magnitude * sin(angleBetween(other));
+}
+
+double Vector2D::dotProduct(const Vector2D& other) const {
+	return magnitude * other.magnitude * cos(angleBetween(other));
+}
+
+double Vector2D::selfDotProduct() const {
+	return magnitude*magnitude;
 }
 
 double Vector2D::getAngle() const {
@@ -64,6 +76,6 @@ bool Vector2D::operator==(const Vector2D &other) const {
 
 std::string Vector2D::str () const {
 	std::ostringstream s;
-	s << "<" << this->magnitude << ", " << this->angle << ">";
+	s << "<" << magnitude << ", " << angle << ">";
 	return s.str();
 }

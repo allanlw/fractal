@@ -28,7 +28,7 @@ double sumSquares(std::list<double>::const_iterator start, std::list<double>::co
 	return result;
 }
 
-double productZip(std::list<double>::const_iterator start1, std::list<double>::const_iterator end1,
+double dotProduct(std::list<double>::const_iterator start1, std::list<double>::const_iterator end1,
                   std::list<double>::const_iterator start2, std::list<double>::const_iterator end2) {
 	double result = 0;
 	for (; start1 != end1 && start2 != end2; start1++, start2++) {

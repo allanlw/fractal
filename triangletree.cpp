@@ -4,8 +4,8 @@ using namespace std;
 
 TriangleTree::TriangleTree(DoubleImage image) : head(NULL), image(image), lastId(0) {
 	std::vector<Point2D> corners = image.getCorners();
-	head = new Triangle(&(corners[0]), &(corners[1]), &(corners[2]));
-	head->setNextSibling(new Triangle(&(corners[0]), &(corners[3]), &(corners[2])));
+	head = new Triangle(corners[0], corners[1], corners[2]);
+	head->setNextSibling(new Triangle(corners[0], corners[3], corners[2]));
 	unassigned.push_back(head);
 	unassigned.push_back(head->getNextSibling());
 }
@@ -36,7 +36,7 @@ Triangle* TriangleTree::assignOne() {
 	insert_iterator<list<Triangle*> > it(above, above.end());
 	getAllAbove(next, it);
 	TriFit best = image.getBestMatch(next, above.begin(), above.end());
-	if (best.error < ERROR_CUTOFF && best.error >= 0) {
+	if (best.getError() < ERROR_CUTOFF && best.getError() >= 0) {
 		next->setTarget(best);
 	} else {
 		subdivide(next);
@@ -47,7 +47,7 @@ Triangle* TriangleTree::assignOne() {
 void TriangleTree::subdivide(Triangle* t) {
 	t->subdivide(.5, .5, .5);
 	for(vector<Triangle*>::const_iterator it = t->getChildren()->begin(); it != t->getChildren()->end(); it++) {
-		unassigned.push_front(*it);
+		unassigned.push_back(*it);
 	}
 }
 

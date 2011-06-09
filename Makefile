@@ -1,4 +1,5 @@
 LDFLAGS = -lm -lgd
+TESTLDFLAGS = -lcppunit
 CXXFLAGS = -Wall
 
 # -msse2 does NOT inline calls to cos,tan, etc. is this bad?
@@ -9,11 +10,14 @@ FLAGS_SSE = -march=native
 
 FLAGS_OPT = $(FLAGS_SSE) $(FLAGS_MATH) -O3
 FLAGS_PROF = -pg $(FLAGS_OPT)
-FLAGS_DEBUG = -g -Wextra
+FLAGS_DEBUG = -ggdb -Wextra
 FLAGS_OPTDEBUG = $(FLAGS_OPT) -g
 
-CPPSOURCES = $(wildcard *.cpp)
-CPPHEADERS = $(wildcard *.h) $(wildcard *.hpp)
+TESTSOURCES = $(wildcard *test.cpp)
+TESTHEADERS = $(wildcard *test.hpp) $(wildcard *test.h)
+
+CPPSOURCES = $(filter-out $(TESTSOURCES), $(wildcard *.cpp))
+CPPHEADERS = $(filter-out $(TESTHEADERS), $(wildcard *.h) $(wildcard *.hpp))
 
 FRACTALDEPS = $(CPPSOURCES) $(CPPHEADERS)
 
@@ -28,6 +32,9 @@ opt: fractal-opt
 debug: fractal-debug
 
 prof: fractal-prof
+
+test: $(TESTSOURCES) $(TESTHEADERS) $(CPPSOURCES) $(CPPHEADERS)
+	$(CXX) $(LDFLAGS) $(TESTLDFLAGS) $(CXXFLAGS) $(FLAGS_DEBUG) -o test $(TESTSOURCES) $(filter-out main.cpp, $(CPPSOURCES))
 
 opt-debug: fractal-opt-debug
 

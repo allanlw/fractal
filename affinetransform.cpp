@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <cmath>
-
+#include <sstream>
 
 #include "affinetransform.hpp"
 #include "mathutils.hpp"
@@ -19,42 +19,42 @@ AffineTransform::AffineTransform(double m00, double m01, double m02,
 	m00(m00), m01(m01), m02(m02), m10(m10), m11(m11), m12(m12) {
 }
 
-AffineTransform::AffineTransform(const Triangle * source,
-		const Triangle * target, TriFit::PointMap pointMap) {
-	const std::vector<const Point2D*> sourcePoints = *(source->getPoints());
-	const std::vector<const Point2D*> targetPoints = *(target->getPoints());
-	const double s_x[] = { sourcePoints[0]->getX(), sourcePoints[1]->getX(),
-			sourcePoints[2]->getX() };
-	const double s_y[] = { sourcePoints[0]->getY(), sourcePoints[1]->getY(),
-			sourcePoints[2]->getY() };
+AffineTransform::AffineTransform(const Triangle& source,
+		const Triangle& target, TriFit::PointMap pointMap) {
+	const std::vector<Point2D> sourcePoints = *(source.getPoints());
+	const std::vector<Point2D> targetPoints = *(target.getPoints());
+	double s_x[] = { sourcePoints[0].getX(), sourcePoints[1].getX(),
+			sourcePoints[2].getX() };
+	double s_y[] = { sourcePoints[0].getY(), sourcePoints[1].getY(),
+			sourcePoints[2].getY() };
 
-	const double d_x[] = { targetPoints[TriFit::getPoint0(pointMap)]->getX(),
-			targetPoints[TriFit::getPoint1(pointMap)]->getX(),
-			targetPoints[TriFit::getPoint2(pointMap)]->getX() };
-	const double d_y[] = { targetPoints[TriFit::getPoint0(pointMap)]->getY(),
-			targetPoints[TriFit::getPoint1(pointMap)]->getY(),
-			targetPoints[TriFit::getPoint2(pointMap)]->getY() };
+	double d_x[] = { targetPoints[TriFit::getPoint0(pointMap)].getX(),
+			targetPoints[TriFit::getPoint1(pointMap)].getX(),
+			targetPoints[TriFit::getPoint2(pointMap)].getX() };
+	double d_y[] = { targetPoints[TriFit::getPoint0(pointMap)].getY(),
+			targetPoints[TriFit::getPoint1(pointMap)].getY(),
+			targetPoints[TriFit::getPoint2(pointMap)].getY() };
 
-	const double descriminant = 1.0 / (s_x[2] * (s_y[0] - s_y[1]) + s_x[0] * (s_y[1]
+	double descriminant = 1.0 / (s_x[2] * (s_y[0] - s_y[1]) + s_x[0] * (s_y[1]
 			- s_y[2]) + s_x[1] * (s_y[2] - s_y[0]));
 
 	if (abs(descriminant) < ZERO) {
 		throw InvalidTransformException();
 	}
 
-	const double tm00 = (d_x[0] * (s_y[1] - s_y[2]) + d_x[1] * (s_y[2] - s_y[0])
+	double tm00 = (d_x[0] * (s_y[1] - s_y[2]) + d_x[1] * (s_y[2] - s_y[0])
 			+ d_x[2] * (s_y[0] - s_y[1])) * descriminant;
-	const double tm01 = (d_x[0] * (s_x[2] - s_x[1]) + d_x[1] * (s_x[0] - s_x[2])
+	double tm01 = (d_x[0] * (s_x[2] - s_x[1]) + d_x[1] * (s_x[0] - s_x[2])
 			+ d_x[2] * (s_x[1] - s_x[0])) * descriminant;
-	const double tm02 = (d_x[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_x[1]
+	double tm02 = (d_x[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_x[1]
 			* (s_x[2] * s_y[0] - s_x[0] * s_y[2]) + d_x[2] * (s_x[0] * s_y[1]
 			- s_x[1] * s_y[0])) * descriminant;
 
-	const double tm10 = (d_y[0] * (s_y[1] - s_y[2]) + d_y[1] * (s_y[2] - s_y[0])
+	double tm10 = (d_y[0] * (s_y[1] - s_y[2]) + d_y[1] * (s_y[2] - s_y[0])
 			+ d_y[2] * (s_y[0] - s_y[1])) * descriminant;
-	const double tm11 = (d_y[0] * (s_x[2] - s_x[1]) + d_y[1] * (s_x[0] - s_x[2])
+	double tm11 = (d_y[0] * (s_x[2] - s_x[1]) + d_y[1] * (s_x[0] - s_x[2])
 			+ d_y[2] * (s_x[1] - s_x[0])) * descriminant;
-	const double tm12 = (d_y[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_y[1]
+	double tm12 = (d_y[0] * (s_x[1] * s_y[2] - s_x[2] * s_y[1]) + d_y[1]
 			* (s_x[2] * s_y[0] - s_x[0] * s_y[2]) + d_y[2] * (s_x[0] * s_y[1]
 			- s_x[1] * s_y[0])) * descriminant;
 
@@ -85,4 +85,12 @@ AffineTransform AffineTransform::getInverse() const {
 			(m01 * m12 - m11 * m02) / det, // m02
 			(m10 * m02 - m00 * m12) / det // m12
 	);
+}
+
+string AffineTransform::str() const{
+	ostringstream s;
+	s << "[[" << m00 << "," << m01;
+	s << "," << m02 << "],[" << m10;
+	s << "," << m11 << "," << m12 << "]]";
+	return s.str();
 }

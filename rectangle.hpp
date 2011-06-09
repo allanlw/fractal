@@ -17,8 +17,12 @@ public:
 	double getY() const;
 	double getWidth() const;
 	double getHeight() const;
+	double getLeft() const;
+	double getRight() const;
+	double getTop() const;
+	double getBottom() const;
 	double getArea() const;
-	bool pointInside(const Point2D* point) const;
+	bool pointInside(const Point2D& point) const;
 	std::string str() const;
 };
 #endif

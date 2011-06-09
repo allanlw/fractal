@@ -25,7 +25,7 @@ public:
 	std::list<double> getPointsInside(Triangle* t);
 	std::list<double> getCorrespondingPoints(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap);
 */
-	void getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints);
+	void getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, std::insert_iterator<std::list<double> > smallerInserter, std::insert_iterator<std::list<double> > largerInserter);
 	std::vector<Point2D> getCorners();
 	TriFit getBestMatch(Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
 };

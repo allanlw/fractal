@@ -1,5 +1,7 @@
 #include "doubleimage.hpp"
 
+#include <iostream>
+
 #include "mathutils.hpp"
 #include "constant.hpp"
 
@@ -45,9 +47,9 @@ double DoubleImage::valueAt(const Point2D& point) const {
 }
 
 TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap) {
-	list<double> targetPoints;
-	list<double> rangePoints;
-	getInsideAndCorresponding(smaller, larger, pMap, &rangePoints, &targetPoints);
+	list<double> targetPoints(0);
+	list<double> rangePoints(0);
+	getInsideAndCorresponding(smaller, larger, pMap, insert_iterator<list<double> >(rangePoints, rangePoints.begin()), insert_iterator<list<double> >(targetPoints, targetPoints.begin()));
 
 	if (targetPoints.size() != rangePoints.size()) {
 		throw logic_error("Target and Range Points not the same size.");
@@ -57,19 +59,23 @@ TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::P
 	double rangeSum = sum(rangePoints.begin(), rangePoints.end());
 	double domainSquaresSum = sumSquares(targetPoints.begin(), targetPoints.end());
 	double rangeSquaresSum = sumSquares(rangePoints.begin(), rangePoints.end());
-	double productSum = productZip(targetPoints.begin(), targetPoints.end(), rangePoints.begin(), rangePoints.end());
-	double n = (double)targetPoints.size();
+	double productSum = dotProduct(targetPoints.begin(), targetPoints.end(), rangePoints.begin(), rangePoints.end());
+	double n = targetPoints.size();
 
-	double s = (n * n * productSum - domainSum * rangeSum)
-			/ (n * n * domainSquaresSum - domainSum * domainSum);
+	double s = ((n * n * productSum) - (domainSum * rangeSum))
+			/ ((n * n * domainSquaresSum) - (domainSum * domainSum));
 
-	double o = (rangeSum - s * domainSum) / (n * n);
+	double o = (rangeSum - (s * domainSum)) / (n * n);
 
-	double r = ((rangeSquaresSum + s * (s * domainSquaresSum - 2.0 *
-			productSum + 2.0 * o * domainSum) + o * (o * n
-			* n - 2.0 * rangeSum)));
+	double r = ((rangeSquaresSum + (s * (s * domainSquaresSum - 2.0 *
+			productSum + 2.0 * o * domainSum)) + (o * (o * n
+			* n - 2.0 * rangeSum))));
+	cout << n << ","<< "," << domainSum << "," << rangeSum << ",";
+	cout << domainSquaresSum << "," << rangeSquaresSum << "," << productSum << ",";
+	cout <<s << "," << o << "," << r << endl;
+	TriFit result(s,o,r,pMap,larger);
 
-	return TriFit(s, o, r, pMap, larger);
+	return result;
 }
 
 /*
@@ -109,30 +115,50 @@ std::list<double> DoubleImage::getCorrespondingPoints(Triangle* smaller, Triangl
 }
 */
 
-void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, std::list<double>* smallerPoints, std::list<double>* largerPoints) {
+void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, insert_iterator<list<double> > smallerInserter, insert_iterator<list<double> > largerInserter) {
 	Rectangle bounds = larger->getBoundingBox();
 
-	if (largerPoints == NULL || smallerPoints == NULL) {
-		throw logic_error("largerPoints or SmallerPoints == NULL");
-	}
-
-	AffineTransform trans(larger, smaller, pMap);
-	double xMax = snapXToGrid(bounds.getX() + bounds.getWidth());
-	double yMax = snapYToGrid(bounds.getY() + bounds.getHeight());
+	AffineTransform trans(*larger, *smaller, pMap);
+	double xMax = snapXToGrid(bounds.getRight());
+	double yMax = snapYToGrid(bounds.getBottom());
 	double xInc = 1.0 / ((double)gdImageSX(image));
 	double yInc = 1.0 / ((double)gdImageSY(image));
 
-	for (double x = snapXToGrid(bounds.getX()); x <= xMax; x += xInc) {
-		bool hit = false;
-		for (double y = snapYToGrid(bounds.getY()); y <= yMax; y += yInc) {
+	cout << trans.str() << endl;
+
+	for (double x = snapXToGrid(bounds.getLeft()); x <= xMax; x += xInc) {
+		Point2D top(-1,-1);
+		bool topSet = false;
+		for (double y = snapYToGrid(bounds.getTop()); y <= yMax; y += yInc) {
 			Point2D point(x,y);
 			if (larger->pointInside(point)) {
-				largerPoints->push_back(valueAt(point));
-				Point2D transformed = trans.transform(point);
-				smallerPoints->push_back(valueAt(transformed));
-				hit = true;
-			} else if (hit) {
+				top = point;
+				topSet = true;
 				break;
+			}
+		}
+		if (!topSet) {
+			continue;
+		}
+		Point2D bottom(-1,-1);
+		bool bottomSet = false;
+		double limit = top.getY();
+		for (double y = yMax; y > limit; y -= yInc) {
+			Point2D point(x,y);
+			if (larger->pointInside(point)) {
+				bottom = point;
+				bottomSet = true;
+				break;
+			}
+		}
+		if (!bottomSet || top == bottom) {
+			*largerInserter = valueAt(top);
+			*smallerInserter = valueAt(trans.transform(top));
+		} else {
+			for (double y = bottom.getY(); y >= limit; y -= yInc) {
+				Point2D point(x,y);
+				*largerInserter = valueAt(point);
+				*smallerInserter = valueAt(trans.transform(point));
 			}
 		}
 	}
@@ -140,16 +166,15 @@ void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger,
 
 std::vector<Point2D> DoubleImage::getCorners() {
 	vector<Point2D> result;
-	result.push_back(Point2D(0,0));
-	result.push_back(Point2D(1,0));
-	result.push_back(Point2D(1,1));
-	result.push_back(Point2D(0,1));
+	result.push_back(Point2D(0.,0.));
+	result.push_back(Point2D(1.,0.));
+	result.push_back(Point2D(1.,1.));
+	result.push_back(Point2D(0.,1.));
 	return result;
 }
 
 TriFit DoubleImage::getBestMatch(Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
-	TriFit best;
-	best.error = -1;
+	TriFit result(0, 0, -1, TriFit::P012, NULL);
 	double maxArea = MAX_SEARCH_RATIO*smaller->getArea();
 	for(list<Triangle*>::const_iterator it = start; it!=end;it++) {
 		if ((*it)->getArea() > maxArea || smaller == *it) {
@@ -157,11 +182,11 @@ TriFit DoubleImage::getBestMatch(Triangle* smaller, list<Triangle*>::const_itera
 		}
 		for (unsigned char i = 0; i < TriFit::NUM_MAPS; i++) {
 			TriFit::PointMap map = TriFit::pointMapFromInt(i);
-			TriFit f = getOptimalFit(smaller,*it, map);
-			if (f.error < best.error || best.error < 0) {
-				best = f;
+			TriFit f(getOptimalFit(smaller,*it, map));
+			if (f.getError() < result.getError() || result.getError() < 0) {
+				result = f;
 			}
 		}
 	}
-	return best;
+	return result;
 }
