@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 	DoubleImage image(lenna);
 	TriangleTree tree(image);
 
-	for (int i = 0; i < 30; i++) {
+	for (int i = 0; true; i++) {
 		Triangle* cur = tree.assignOne();
 		if (cur == NULL) break;
 		cout << tree.getLastId();

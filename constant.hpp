@@ -3,7 +3,7 @@
 
 
 #ifndef ERROR_CUTOFF
-#define ERROR_CUTOFF 10000
+#define ERROR_CUTOFF 100
 #endif
 
 #ifndef MIN_SEARCH_AREA

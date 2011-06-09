@@ -35,10 +35,9 @@ Triangle* TriangleTree::assignOne() {
 		list<Triangle*> above(0);
 		insert_iterator<list<Triangle*> > it(above, above.begin());
 		getAllAbove(next, it);
-		cout << above.size() << endl;
-		list<Triangle*>::const_iterator begin = above.begin();
-		list<Triangle*>::const_iterator end = above.end();
-		TriFit best = image.getBestMatch(next, begin, end);
+		cout << above.size() << " - ";
+		TriFit best = image.getBestMatch(next, above.begin(), above.end());
+		cout << best.error << endl;
 		if (best.error < ERROR_CUTOFF && best.error >= 0) {
 			next->setTarget(best);
 		} else {

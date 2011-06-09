@@ -78,8 +78,6 @@ TriFit DoubleImage::getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::P
 
 	TriFit result(s,o,r,pMap,larger);
 
-	cout << "\t" << result.str() << endl;
-
 	return result;
 }
 
@@ -92,8 +90,6 @@ void DoubleImage::getInsideAndCorresponding(Triangle* smaller, Triangle* larger,
 	double yMax = snapYToGrid(bounds.getBottom());
 	double xInc = 1.0 / double(gdImageSX(image));
 	double yInc = 1.0 / double(gdImageSY(image));
-
-	cout << "Mapping " << smaller->str() << " to " << larger->str() << endl;
 
 	for (double x = snapXToGrid(bounds.getLeft()); x <= xMax; x += xInc) {
 		Point2D top(-1,-1);
