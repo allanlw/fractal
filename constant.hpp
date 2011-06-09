@@ -18,4 +18,8 @@
 #define SAME_SIDE_TECHNIQUE false
 #endif
 
+#ifndef EDGE_DETECT_SOBEL
+#define EDGE_DETECT_SOBEL true
+#endif
+
 #endif

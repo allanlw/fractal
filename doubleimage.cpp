@@ -4,10 +4,21 @@
 
 #include "mathutils.hpp"
 #include "constant.hpp"
+#include "imageutils.hpp"
 
 using namespace std;
 
 DoubleImage::DoubleImage(gdImagePtr image) : image(image) {
+	if (EDGE_DETECT_SOBEL) {
+		edges = edgeDetectSobel(image);
+	} else {
+		edges = edgeDetectLaplace(image);
+	}
+}
+
+DoubleImage::~DoubleImage() {
+	gdFree(image);
+	gdFree(edges);
 }
 
 double DoubleImage::snapXToGrid(double x) const {
