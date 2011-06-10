@@ -35,17 +35,19 @@ static int _laplace (const unsigned char* data) {
 	return grad;
 }
 
-gdImagePtr edgeDetectSobel(gdImagePtr image) {
+gdImagePtr edgeDetectSobel(const gdImagePtr image) {
 	return edgeDetect(image, _sobel);
 }
 
-gdImagePtr edgeDetectLaplace(gdImagePtr image) {
+gdImagePtr edgeDetectLaplace(const gdImagePtr image) {
 	return edgeDetect(image, _laplace);
 }
 
-static unsigned char _getPixel(gdImagePtr img, int x, int y) {
+
+
+unsigned char getPixel(const gdImagePtr img, int x, int y) {
 	if (x < 0) {
-		x+= gdImageSX(img);
+		x += gdImageSX(img);
 	}
 	if (x >= gdImageSX(img)) {
 		x -= gdImageSX(img);
@@ -63,12 +65,16 @@ static unsigned char _getPixel(gdImagePtr img, int x, int y) {
 	return (r+g+b)/3;
 }
 
-static void _setPixel(gdImagePtr img, int x, int y, unsigned char grey) {
+void setPixel(gdImagePtr img, int x, int y, unsigned char grey) {
 	int c = gdTrueColor(grey,grey,grey);
 	gdImageSetPixel(img, x, y, c);
 }
 
-gdImagePtr edgeDetect(gdImagePtr image, int op(const unsigned char*)) {
+unsigned char boundColor(int c) {
+	return (c>gdRedMax)?(gdRedMax):((c<0)?0:c);
+}
+
+gdImagePtr edgeDetect(const gdImagePtr image, int op(const unsigned char*)) {
 	gdImagePtr result = gdImageCreateTrueColor(gdImageSX(image), gdImageSY(image));
 
 	int width = gdImageSX(image);
@@ -77,19 +83,29 @@ gdImagePtr edgeDetect(gdImagePtr image, int op(const unsigned char*)) {
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 			unsigned char pix[9];
-			pix[0] = _getPixel(image, x-1, y-1);
-			pix[1] = _getPixel(image, x, y-1);
-			pix[2] = _getPixel(image, x+1, y-1);
-			pix[3] = _getPixel(image, x-1, y);
-			pix[4] = _getPixel(image, x, y);
-			pix[5] = _getPixel(image, x+1, y);
-			pix[6] = _getPixel(image, x-1, y+1);
-			pix[7] = _getPixel(image, x, y+1);
-			pix[8] = _getPixel(image, x+1, y+1);
+			pix[0] = getPixel(image, x-1, y-1);
+			pix[1] = getPixel(image, x,   y-1);
+			pix[2] = getPixel(image, x+1, y-1);
+			pix[3] = getPixel(image, x-1, y  );
+			pix[4] = getPixel(image, x,   y  );
+			pix[5] = getPixel(image, x+1, y  );
+			pix[6] = getPixel(image, x-1, y+1);
+			pix[7] = getPixel(image, x,   y+1);
+			pix[8] = getPixel(image, x+1, y+1);
 			int c = op(pix);
-			c = (c>255)?(255):((c<0)?0:c);
-			_setPixel(result, x, y, c);
+			setPixel(result, x, y, boundColor(c));
 		}
 	}
 	return result;
+}
+
+void clearAlpha(gdImagePtr img) {
+	for (int x = 0; x < gdImageSX(img); x++) {
+		for (int y = 0; y < gdImageSY(img); y++) {
+			int oldC = gdImageGetPixel(img, x, y);
+			gdImageSetPixel(img, x, y, gdTrueColorAlpha(gdImageRed(img, oldC),
+			                gdImageBlue(img, oldC), gdImageGreen(img, oldC),
+			                gdAlphaOpaque));
+		}
+	}
 }

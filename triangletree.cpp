@@ -1,15 +1,28 @@
 #include "triangletree.hpp"
 
 #include <iostream>
+#include "gd.h"
+#include <stdexcept>
+
+#include "mathutils.hpp"
+#include "imageutils.hpp"
 
 using namespace std;
 
-TriangleTree::TriangleTree(DoubleImage image) : head(NULL), image(image), lastId(0) {
+TriangleTree::TriangleTree(DoubleImage& image) : head(NULL), image(image), lastId(0) {
 	std::vector<Point2D> corners = image.getCorners();
 	head = new Triangle(corners[0], corners[1], corners[2]);
 	head->setNextSibling(new Triangle(corners[0], corners[3], corners[2]));
 	unassigned.push_back(head);
 	unassigned.push_back(head->getNextSibling());
+}
+
+TriangleTree::TriangleTree(DoubleImage& image, istream& in) : head(NULL), image(image), lastId(0) {
+	char magic[4];
+	in.read(magic, 4);
+	if (!(string("TREE") == magic)) {
+		throw logic_error("NOT VALID FILE");
+	}
 }
 
 Triangle* TriangleTree::getHead() const {
@@ -35,9 +48,7 @@ Triangle* TriangleTree::assignOne() {
 		list<Triangle*> above(0);
 		insert_iterator<list<Triangle*> > it(above, above.begin());
 		getAllAbove(next, it);
-		cout << above.size() << " - ";
 		TriFit best = image.getBestMatch(next, above.begin(), above.end());
-		cout << best.error << endl;
 		if (best.error < ERROR_CUTOFF && best.error >= 0) {
 			next->setTarget(best);
 		} else {
@@ -63,6 +74,15 @@ void TriangleTree::getAllAbove(Triangle* t, insert_iterator<list<Triangle*> >& i
 	}
 }
 
+void TriangleTree::getAllBelow(Triangle*t, insert_iterator<list<Triangle*> >& it) {
+	const vector<Triangle*>* children = t->getChildren();
+	if (children != NULL || children->size() > 0) {
+		*it = (*children)[0];
+		getAllSiblings((*children)[0], it);
+		getAllBelow((*children)[0], it);
+	}
+}
+
 void TriangleTree::getAllSiblings(Triangle* t, insert_iterator<list<Triangle*> >& it) {
 	getAllNextSiblings(t, it);
 	getAllPrevSiblings(t, it);
@@ -84,7 +104,49 @@ void TriangleTree::getAllPrevSiblings(Triangle* t, insert_iterator<list<Triangle
 	}
 }
 
-
-std::size_t TriangleTree::getLastId() {
+unsigned short TriangleTree::getLastId() {
 	return lastId;
+}
+
+void TriangleTree::serializeChildren(ostream& out, const Triangle* t) {
+	t->serialize(out);
+	if (t->getChildren()->size() != 0) {
+		const vector<Triangle*> children = *(t->getChildren());
+		for (vector<Triangle*>::const_iterator it=children.begin(); it != children.end(); it++) {
+			serializeChildren(out, *it);
+		}
+	}
+}
+
+void TriangleTree::serializeTree(ostream& out, const Triangle* t) {
+	serializeChildren(out, t);
+	if (t->getNextSibling() != NULL) {
+		serializeTree(out, t->getNextSibling());
+	}
+}
+
+void TriangleTree::serialize(ostream& out) const {
+	out << "TREE";
+	serializeUnsignedShort(out, lastId);
+	serializeTree(out, head);
+}
+
+void TriangleTree::eval() {
+
+	gdImagePtr newImage = gdImageCreateTrueColor(gdImageSX(image.getImage()), gdImageSY(image.getImage()));
+
+	list<Triangle*> allTriangles;
+
+	insert_iterator<list<Triangle*> > insertIt(allTriangles, allTriangles.begin());
+	getAllBelow(head, insertIt);
+	getAllSiblings(head, insertIt);
+
+	for (list<Triangle*>::const_iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
+		if (!(*it)->isTerminal()) {
+			continue;
+		}
+		image.mapPoints(*it, (*it)->getTarget(), newImage);
+	}
+	clearAlpha(newImage);
+	image.setImage(newImage);
 }

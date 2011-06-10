@@ -18,19 +18,25 @@ public:
 	DoubleImage(gdImagePtr image);
 	double snapXToGrid(double x) const;
 	double snapYToGrid(double y) const;
+	double getXInc() const;
+	double getYInc() const;
+	std::list<Point2D> getPointsInside(const Triangle* t) const;
 	Point2D snapToGrid(const Point2D& point) const;
 	double valueAt(double x, double y) const;
 	double valueAt(const Point2D& point) const;
-	TriFit getOptimalFit(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap);
-/*
-	std::list<double> getPointsInside(Triangle* t);
-	std::list<double> getCorrespondingPoints(Triangle* smaller, Triangle* larger, Triangle::PointMap pMap);
-*/
-	void getInsideAndCorresponding(Triangle* smaller, Triangle* larger, TriFit::PointMap pMap, std::insert_iterator<std::list<double> > smallerInserter, std::insert_iterator<std::list<double> > largerInserter);
-	std::vector<Point2D> getCorners();
-	TriFit getBestMatch(Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
-
+	TriFit getOptimalFit(const Triangle* smaller, const Triangle* larger, TriFit::PointMap pMap) const;
+	void getInsideAndCorresponding(const Triangle* smaller, const Triangle* larger, TriFit::PointMap pMap, std::insert_iterator<std::list<double> > smallerInserter, std::insert_iterator<std::list<double> > largerInserter) const;
+	static std::vector<Point2D> getCorners();
+	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end) const;
+	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to) const;
+	void setImage(gdImagePtr image);
+	gdImagePtr getImage() const;
 	~DoubleImage();
+
+	static int doubleToIntC(double c);
+	int doubleToIntX(double x) const;
+	int doubleToIntY(double y) const;
+	static int doubleToInt(double x, int min, int max);
 };
 
 #endif

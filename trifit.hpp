@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string>
+#include <ostream>
 
 class TriFit {
 public:
@@ -15,9 +16,9 @@ public:
 	double brightness;
 	double error;
 	PointMap pMap;
-	class Triangle* best;
+	const class Triangle* best;
 
-	TriFit(double saturation, double brightness, double error, PointMap pMap, class Triangle* best);
+	TriFit(double saturation, double brightness, double error, PointMap pMap, const class Triangle* best);
 	TriFit(const TriFit& other);
 	explicit TriFit();
 
@@ -25,8 +26,10 @@ public:
 
 
 	std::string str() const;
+	void serialize(std::ostream& out) const;
 
 	static PointMap pointMapFromInt(std::size_t pMap);
+	static char pointMapToInt(PointMap pMap);
 	static unsigned char getPoint0(PointMap pMap);
 	static unsigned char getPoint1(PointMap pMap);
 	static unsigned char getPoint2(PointMap pMap);

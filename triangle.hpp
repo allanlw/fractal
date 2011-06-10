@@ -6,6 +6,7 @@ class Triangle;
 #include <vector>
 #include <cstddef>
 #include <string>
+#include <ostream>
 
 #include "point2d.hpp"
 #include "affinetransform.hpp"
@@ -19,7 +20,7 @@ private:
 	Triangle* parent;
 	bool terminal;
 
-	std::size_t id;
+	unsigned short id;
 
 	std::vector<Point2D> points;
 
@@ -44,8 +45,8 @@ public:
 	TriFit getTarget() const;
 	const std::vector<Point2D>* getPoints() const;
 	const std::vector<Triangle*>* getChildren() const;
-	std::size_t getId() const;
-	void setId(std::size_t id);
+	unsigned short getId() const;
+	void setId(unsigned short id);
 
 	void subdivide(double r01, double r02, double r12);
 	AffineTransform getTransformToTarget() const;
@@ -57,6 +58,8 @@ public:
 	Point2D calcCenteroid() const;
 
 	std::string str() const;
+	void serialize(std::ostream& out) const;
+	void serializeID(std::ostream& out) const;
 };
 
 #endif /* TRIANGLE_HPP_ */

@@ -1,16 +1,41 @@
 #include <sstream>
 
 #include "trifit.hpp"
+#include "mathutils.hpp"
 
 using namespace std;
 
-TriFit::TriFit(double saturation, double brightness, double error, TriFit::PointMap pMap, Triangle* best) :
+TriFit::TriFit(double saturation, double brightness, double error, TriFit::PointMap pMap, const Triangle* best) :
 saturation(saturation), brightness(brightness), error(error), pMap(pMap), best(best) { }
 
 TriFit::TriFit(const TriFit& other) : saturation(other.saturation), brightness(other.brightness), error(other.error),
 pMap(other.pMap), best(other.best) { }
 
 TriFit::TriFit() : saturation(0), brightness(0), error(-1), pMap(P012), best(NULL) { }
+
+char TriFit::pointMapToInt(TriFit::PointMap pMap) {
+	switch(pMap) {
+	default:
+	case P012:
+		return 0;
+		break;
+	case P021:
+		return 1;
+		break;
+	case P102:
+		return 2;
+		break;
+	case P120:
+		return 3;
+		break;
+	case P201:
+		return 4;
+		break;
+	case P210:
+		return 5;
+		break;
+	}
+}
 
 TriFit::PointMap TriFit::pointMapFromInt(std::size_t pMap) {
 	switch(pMap) {
@@ -130,4 +155,18 @@ string TriFit::str() const {
 	}
 	st << ",t" << best->str() << "]";
 	return st.str();
+}
+
+void TriFit::serialize(ostream& out) const {
+	out.put('F');
+	serializeDouble(out, saturation);
+	serializeDouble(out, brightness);
+	serializeDouble(out, error);
+	out.put(pointMapToInt(pMap));
+	if (best != NULL) {
+		best->serializeID(out);
+	} else {
+		const char nullId[2] = {0,0};
+		out.write(nullId, 2);
+	}
 }

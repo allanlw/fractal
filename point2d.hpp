@@ -2,6 +2,7 @@
 #define _POINT2D_HPP
 
 #include <string>
+#include <ostream>
 
 class Vector2D;
 
@@ -22,5 +23,6 @@ public:
 	Vector2D operator-(const Point2D& other) const;
 	Point2D& operator=(const Point2D& other);
 	std::string str () const;
+	void serialize(std::ostream& out) const;
 };
 #endif

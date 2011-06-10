@@ -52,10 +52,10 @@ const std::vector<Triangle*>* Triangle::getChildren() const {
 bool Triangle::isTerminal() const {
 	return this->terminal;
 }
-size_t Triangle::getId() const {
+unsigned short Triangle::getId() const {
 	return this->id;
 }
-void Triangle::setId(size_t id) {
+void Triangle::setId(unsigned short id) {
 	this->id = id;
 }
 
@@ -205,4 +205,40 @@ Point2D Triangle::calcCenteroid() const {
 	double x = (points[0].getX() + points[1].getX() + points[2].getX())/3;
 	double y = (points[0].getY() + points[1].getY() + points[2].getY())/3;
 	return Point2D(x,y);
+}
+
+void Triangle::serialize(ostream& out) const {
+	out.put('T');
+	serializeID(out);
+	const char nullId[2] = {0,0};
+	if (parent != NULL) {
+		parent->serializeID(out);
+	} else {
+		out.write(nullId, 2);
+	}
+	if (prevSibling != NULL) {
+		prevSibling->serializeID(out);
+	} else {
+		out.write(nullId, 2);
+	}
+	if (nextSibling != NULL) {
+		nextSibling->serializeID(out);
+	} else {
+		out.write(nullId, 2);
+	}
+	for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
+		it->serialize(out);
+	}
+	out.put((char)children.size());
+	if (children.size() != 0) {
+		for (vector<Triangle*>::const_iterator it = children.begin(); it != children.end(); it++) {
+			(*it)->serializeID(out);
+		}
+	} else {
+		target.serialize(out);
+	}
+}
+
+void Triangle::serializeID(ostream& out) const {
+	serializeUnsignedShort(out, id);
 }

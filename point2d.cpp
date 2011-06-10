@@ -53,3 +53,9 @@ Point2D& Point2D::operator=(const Point2D& other) {
 	y = other.y;
 	return *this;
 }
+
+void Point2D::serialize(ostream& out) const {
+	out.put('P');
+	serializeDouble(out, x);
+	serializeDouble(out, y);
+}
