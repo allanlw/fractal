@@ -1,4 +1,5 @@
 #include <sstream>
+#include <stdexcept>
 
 #include "trifit.hpp"
 #include "mathutils.hpp"
@@ -11,11 +12,10 @@ saturation(saturation), brightness(brightness), error(error), pMap(pMap), best(b
 TriFit::TriFit(const TriFit& other) : saturation(other.saturation), brightness(other.brightness), error(other.error),
 pMap(other.pMap), best(other.best) { }
 
-TriFit::TriFit() : saturation(0), brightness(0), error(-1), pMap(P012), best(NULL) { }
+TriFit::TriFit() : saturation(0), brightness(0), error(-1), pMap(P000), best(NULL) { }
 
 char TriFit::pointMapToInt(TriFit::PointMap pMap) {
 	switch(pMap) {
-	default:
 	case P012:
 		return 0;
 		break;
@@ -34,12 +34,15 @@ char TriFit::pointMapToInt(TriFit::PointMap pMap) {
 	case P210:
 		return 5;
 		break;
+	default:
+	case P000:
+		return 6;
+		break;
 	}
 }
 
 TriFit::PointMap TriFit::pointMapFromInt(std::size_t pMap) {
 	switch(pMap) {
-	default:
 	case 0:
 		return P012;
 		break;
@@ -57,6 +60,10 @@ TriFit::PointMap TriFit::pointMapFromInt(std::size_t pMap) {
 		break;
 	case 5:
 		return P210;
+		break;
+	default:
+	case 6:
+		return P000;
 		break;
 	}
 }
@@ -76,6 +83,7 @@ unsigned char TriFit::getPoint0(PointMap pointMap) {
 		return 2;
 		break;
 	default:
+	case P000:
 		return -1;
 	}
 }
@@ -95,6 +103,7 @@ unsigned char TriFit::getPoint1(PointMap pointMap) {
 		return 2;
 		break;
 	default:
+	case P000:
 		return -1;
 	}
 }
@@ -114,6 +123,7 @@ unsigned char TriFit::getPoint2(PointMap pointMap) {
 		return 2;
 		break;
 	default:
+	case P000:
 		return -1;
 	}
 }
@@ -152,6 +162,9 @@ string TriFit::str() const {
 	case P210:
 		st << "210";
 		break;
+	case P000:
+		st << "000";
+		break;
 	}
 	st << ",t" << best->str() << "]";
 	return st.str();
@@ -166,7 +179,19 @@ void TriFit::serialize(ostream& out) const {
 	if (best != NULL) {
 		best->serializeID(out);
 	} else {
-		const char nullId[2] = {0,0};
-		out.write(nullId, 2);
+		serializeUnsignedShort(out, 0xFFFF);
 	}
+}
+
+
+TriFit::TriFit(istream& in, unsigned short* t) {
+	if (!(in.get() == 'F')) {
+		throw logic_error("Malformed TriFit");
+	}
+	saturation = unserializeDouble(in);
+	brightness = unserializeDouble(in);
+	error = unserializeDouble(in);
+	pMap = pointMapFromInt(in.get());
+	*t = unserializeUnsignedShort(in);
+	best = NULL;
 }

@@ -11,6 +11,7 @@
 #include <list>
 #include <cmath>
 #include <ostream>
+#include <istream>
 
 const double PI = std::atan(1) * 4;
 const double ZERO = 1E-10;
@@ -30,5 +31,8 @@ inline double signum(double d) {
 
 void serializeDouble(std::ostream& out, double d);
 void serializeUnsignedShort(std::ostream& out, unsigned short s);
+
+unsigned short unserializeUnsignedShort(std::istream& in);
+double unserializeDouble(std::istream& in);
 
 #endif /* MATHUTILS_HPP_ */

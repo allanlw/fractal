@@ -1,6 +1,6 @@
 #include <cmath>
 #include <sstream>
-#include <iostream>
+#include <stdexcept>
 
 #include "mathutils.hpp"
 #include "point2d.hpp"
@@ -58,4 +58,12 @@ void Point2D::serialize(ostream& out) const {
 	out.put('P');
 	serializeDouble(out, x);
 	serializeDouble(out, y);
+}
+
+Point2D::Point2D(istream& in) {
+	if (!(in.get() == 'P')) {
+		throw logic_error("Malformed Point2D");
+	}
+	x = unserializeDouble(in);
+	y = unserializeDouble(in);
 }

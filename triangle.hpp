@@ -7,6 +7,7 @@ class Triangle;
 #include <cstddef>
 #include <string>
 #include <ostream>
+#include <istream>
 
 #include "point2d.hpp"
 #include "affinetransform.hpp"
@@ -15,10 +16,18 @@ class Triangle;
 
 class Triangle {
 private:
+	struct Dependencies {
+		unsigned short parent;
+		unsigned short nextSibling;
+		unsigned short prevSibling;
+		unsigned short target;
+		std::vector<unsigned short> children;
+	};
 	Triangle* nextSibling;
 	Triangle* prevSibling;
 	Triangle* parent;
-	bool terminal;
+
+	Dependencies* unresolvedDependencies;
 
 	unsigned short id;
 
@@ -33,6 +42,7 @@ private:
 public:
 	Triangle(const Point2D& point0, const Point2D& point1,
 			const Point2D& point2);
+	Triangle(std::istream& in);
 	//Getters and Setters
 	void setNextSibling(Triangle* next);
 	void setParent(Triangle* parent);
@@ -60,6 +70,7 @@ public:
 	std::string str() const;
 	void serialize(std::ostream& out) const;
 	void serializeID(std::ostream& out) const;
+	void resolveDependencies(const std::vector<Triangle*>& tris);
 };
 
 #endif /* TRIANGLE_HPP_ */

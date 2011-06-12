@@ -10,11 +10,39 @@
 using namespace std;
 
 Triangle::Triangle(const Point2D& point0, const Point2D& point1,
-		const Point2D& point2) :  nextSibling(NULL),prevSibling(NULL), parent(NULL), terminal(true), id(0), children(0) {
+		const Point2D& point2) :  nextSibling(NULL),prevSibling(NULL), parent(NULL), unresolvedDependencies(NULL), id(0), children(0) {
 	points.reserve(3);
 	points.push_back(point0);
 	points.push_back(point1);
 	points.push_back(point2);
+}
+
+Triangle::Triangle(istream& in) : nextSibling(NULL), prevSibling(NULL), parent(NULL), children(0) {
+	if (in.get() != 'T') {
+		throw logic_error("Malformed Triangle");
+	}
+	unresolvedDependencies = new Dependencies;
+	id = unserializeUnsignedShort(in);
+	unresolvedDependencies->parent = unserializeUnsignedShort(in);
+	unresolvedDependencies->prevSibling = unserializeUnsignedShort(in);
+	unresolvedDependencies->nextSibling = unserializeUnsignedShort(in);
+	points.reserve(3);
+	points.push_back(Point2D(in));
+	points.push_back(Point2D(in));
+	points.push_back(Point2D(in));
+
+	char numChildren = 0;
+	in.get(numChildren);
+	if (numChildren != 0) {
+		unresolvedDependencies->children.reserve(numChildren);
+		for (char i = 0; i < numChildren; i++) {
+			unresolvedDependencies->children.push_back(unserializeUnsignedShort(in));
+		}
+		unresolvedDependencies->target = 0xFFFF;
+	} else {
+		target = TriFit(in, &(unresolvedDependencies->target));
+		unresolvedDependencies->children.resize(0);
+	}
 }
 
 Triangle * Triangle::getNextSibling() const {
@@ -50,7 +78,7 @@ const std::vector<Triangle*>* Triangle::getChildren() const {
 	return &(this->children);
 }
 bool Triangle::isTerminal() const {
-	return this->terminal;
+	return this->children.size() == 0;
 }
 unsigned short Triangle::getId() const {
 	return this->id;
@@ -167,8 +195,6 @@ void Triangle::subdivide(double r01, double r02, double r12) {
 	assignNextChildSibling(nextSibling, children[3]);
 
 	assignPrevChildSibling(prevSibling, children[0]);
-
-	this->terminal = false;
 }
 
 void Triangle::assignNextChildSibling(Triangle* next, Triangle* t) {
@@ -210,21 +236,20 @@ Point2D Triangle::calcCenteroid() const {
 void Triangle::serialize(ostream& out) const {
 	out.put('T');
 	serializeID(out);
-	const char nullId[2] = {0,0};
 	if (parent != NULL) {
 		parent->serializeID(out);
 	} else {
-		out.write(nullId, 2);
+		serializeUnsignedShort(out, 0xFFFF);
 	}
 	if (prevSibling != NULL) {
 		prevSibling->serializeID(out);
 	} else {
-		out.write(nullId, 2);
+		serializeUnsignedShort(out, 0xFFFF);
 	}
 	if (nextSibling != NULL) {
 		nextSibling->serializeID(out);
 	} else {
-		out.write(nullId, 2);
+		serializeUnsignedShort(out, 0xFFFF);
 	}
 	for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
 		it->serialize(out);
@@ -241,4 +266,35 @@ void Triangle::serialize(ostream& out) const {
 
 void Triangle::serializeID(ostream& out) const {
 	serializeUnsignedShort(out, id);
+}
+
+void Triangle::resolveDependencies(const vector<Triangle*>& tris) {
+	if (unresolvedDependencies->parent != 0xFFFF) {
+		parent = tris[unresolvedDependencies->parent];
+	} else {
+		parent = NULL;
+	}
+	if (unresolvedDependencies->nextSibling != 0xFFFF) {
+		nextSibling = tris[unresolvedDependencies->nextSibling];
+	} else {
+		nextSibling = NULL;
+	}
+	if (unresolvedDependencies->prevSibling != 0xFFFF) {
+		prevSibling = tris[unresolvedDependencies->prevSibling];
+	} else {
+		prevSibling = NULL;
+	}
+	if (unresolvedDependencies->target != 0xFFFF) {
+		target.best = tris[unresolvedDependencies->target];
+	} else {
+		target.best = NULL;
+	}
+	if (unresolvedDependencies->children.size() != 0) {
+		children.reserve(unresolvedDependencies->children.size());
+		for (size_t i = 0; i < unresolvedDependencies->children.size(); i++) {
+			children.push_back(tris[unresolvedDependencies->children[i]]);
+		}
+	}
+//	delete unresolvedDependencies;
+//	unresolvedDependencies = NULL;
 }

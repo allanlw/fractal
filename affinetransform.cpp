@@ -73,7 +73,7 @@ double AffineTransform::getDeterminant() const {
 
 AffineTransform AffineTransform::getInverse() const {
 	double det = this->getDeterminant();
-	if (det < ZERO) {
+	if (abs(det) < ZERO) {
 		throw InvalidTransformException();
 	}
 

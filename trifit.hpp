@@ -4,11 +4,12 @@
 #include <cstddef>
 #include <string>
 #include <ostream>
+#include <istream>
 
 class TriFit {
 public:
 	enum PointMap {
-		P012, P021, P102, P120, P201, P210
+		P012, P021, P102, P120, P201, P210, P000
 	};
 	static const unsigned char NUM_MAPS = 6;
 
@@ -20,6 +21,7 @@ public:
 
 	TriFit(double saturation, double brightness, double error, PointMap pMap, const class Triangle* best);
 	TriFit(const TriFit& other);
+	TriFit(std::istream& in, unsigned short* t);
 	explicit TriFit();
 
 	TriFit& operator=(const TriFit& other);

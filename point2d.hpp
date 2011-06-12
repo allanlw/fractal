@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <istream>
 
 class Vector2D;
 
@@ -15,6 +16,7 @@ private:
 public:
 	Point2D(double x, double y);
 	Point2D(const Point2D& other);
+	Point2D(std::istream& in);
 	double getX() const;
 	double getY() const;
 	double distance(const Point2D& other) const;

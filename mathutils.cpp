@@ -38,17 +38,27 @@ double dotProduct(std::list<double>::const_iterator start1, std::list<double>::c
 }
 
 void serializeDouble(ostream& out, double d) {
-	union {
-		double d2;
-		short bytes[8];
-	};
-	d2 = d;
-	for (size_t i = 0; i < 8; i++) {
-		out.put(bytes[i]);
-	}
+	out.write((char*)(&d), 8);
 }
 
 void serializeUnsignedShort(ostream& out, unsigned short s) {
-	out.put( s >> 8 );
-	out.put( s & 0xFF );
+	out.write((char*)(&s), 2);
+}
+
+unsigned short unserializeUnsignedShort(istream& in) {
+	union {
+		char bytes[2];
+		unsigned short s;
+	};
+	in.read(bytes, 2);
+	return s;
+}
+
+double unserializeDouble(istream& in) {
+	union {
+	double d;
+	char bytes[8];
+	};
+	in.read(bytes, 8);
+	return d;
 }

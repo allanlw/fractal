@@ -18,12 +18,13 @@ private:
 	Triangle* head;
 	DoubleImage image;
 	std::list<Triangle*> unassigned;
+	std::list<Triangle*> allTriangles;
 	unsigned short lastId;
 
 	void subivide(Triangle* t);
 public:
-	explicit TriangleTree(DoubleImage& image);
-	TriangleTree(DoubleImage&, std::istream& in);
+	explicit TriangleTree(DoubleImage image);
+	TriangleTree(DoubleImage, std::istream& in);
 	Triangle* getHead() const;
 	const std::list<Triangle*>* getUnassigned() const;
 	Triangle* assignOne();
@@ -38,6 +39,7 @@ public:
 	static void serializeTree(std::ostream& out, const Triangle* t);
 	static void serializeChildren(std::ostream& out, const Triangle* t);
 	void eval();
+	const DoubleImage& getImage() const;
 };
 
 #endif

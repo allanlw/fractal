@@ -104,7 +104,7 @@ void clearAlpha(gdImagePtr img) {
 		for (int y = 0; y < gdImageSY(img); y++) {
 			int oldC = gdImageGetPixel(img, x, y);
 			gdImageSetPixel(img, x, y, gdTrueColorAlpha(gdImageRed(img, oldC),
-			                gdImageBlue(img, oldC), gdImageGreen(img, oldC),
+			                gdImageGreen(img, oldC), gdImageBlue(img, oldC),
 			                gdAlphaOpaque));
 		}
 	}

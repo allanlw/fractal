@@ -3,15 +3,7 @@
 
 
 #ifndef ERROR_CUTOFF
-#define ERROR_CUTOFF 1000
-#endif
-
-#ifndef MIN_SEARCH_AREA
-#define MIN_SEARCH_AREA (1.0/16.0)
-#endif
-
-#ifndef MAX_SEARCH_RATIO
-#define MAX_SEARCH_RATIO 4.0
+#define ERROR_CUTOFF 10
 #endif
 
 #ifndef SAME_SIDE_TECHNIQUE
@@ -20,6 +12,18 @@
 
 #ifndef EDGE_DETECT_SOBEL
 #define EDGE_DETECT_SOBEL true
+#endif
+
+#ifndef NUM_ITERATIONS
+#define NUM_ITERATIONS 20
+#endif
+
+#ifndef MIN_SUBDIVIDE_RATIO
+#define MIN_SUBDIVIDE_RATIO .25
+#endif
+
+#ifndef MIN_SEARCH_RATIO
+#define MIN_SEARCH_RATIO 2
 #endif
 
 #endif
