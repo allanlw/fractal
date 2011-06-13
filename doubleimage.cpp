@@ -1,6 +1,9 @@
 #include "doubleimage.hpp"
 
 #include <iostream>
+#include <utility>
+#include <vector>
+#include <list>
 #include <cstdio>
 
 #include "mathutils.hpp"
@@ -26,6 +29,7 @@ DoubleImage::DoubleImage(const DoubleImage& img) {
 	this->edges = gdImageCreateTrueColor(gdImageSX(img.edges), gdImageSY(img.edges));
 	gdImageCopy(this->edges, img.edges, 0, 0, 0, 0, gdImageSX(this->edges), gdImageSY(this->edges));
 }
+
 DoubleImage::~DoubleImage() {
 	gdFree(image);
 	gdFree(edges);
@@ -44,6 +48,7 @@ double DoubleImage::floorXToGrid(double x) const {
 }
 
 double DoubleImage::floorYToGrid(double y) const {
+
 	return floor (y * (double) gdImageSY(image) ) / ((double) gdImageSY(image));
 }
 
@@ -78,7 +83,7 @@ int DoubleImage::doubleToIntY(double y) const {
 }
 
 int DoubleImage::doubleToIntC(double c) {
-	return doubleToInt(c, 0, gdRedMax);
+	return doubleToInt(c, 0, gdRedMax+1);
 }
 
 double DoubleImage::valueAt(double x, double y) const {
@@ -107,17 +112,18 @@ double DoubleImage::valueAt(const Point2D& point) const {
 
 TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* larger) {
 
-	map<TriFit::PointMap, list<double> > allConfigs = getAllConfigurations(smaller, larger);
+	map<TriFit::PointMap, vector<double> > allConfigs = getAllConfigurations(smaller, larger);
 	TriFit best(0, 0, -1, TriFit::P000, larger);
-	TriFit::PointMap tm = TriFit::P000;
+	const TriFit::PointMap tm = TriFit::P000;
+	double domainSum = sum(allConfigs[tm].begin(), allConfigs[tm].end());
+	double domainSquaresSum = sumSquares(allConfigs[tm].begin(), allConfigs[tm].end());
+	double n = allConfigs[tm].size();
+
 	for (char i = 0; i < TriFit::NUM_MAPS; i++) {
 		TriFit::PointMap m = TriFit::pointMapFromInt(i);
-		double domainSum = sum(allConfigs[tm].begin(), allConfigs[tm].end());
 		double rangeSum = sum(allConfigs[m].begin(), allConfigs[m].end());
-		double domainSquaresSum = sumSquares(allConfigs[tm].begin(), allConfigs[tm].end());
 		double rangeSquaresSum = sumSquares(allConfigs[m].begin(), allConfigs[m].end());
 		double productSum = dotProduct(allConfigs[tm].begin(), allConfigs[tm].end(), allConfigs[m].begin(), allConfigs[m].end());
-		double n = allConfigs[tm].size();
 
 		double denom = ((n * n * domainSquaresSum) - (domainSum * domainSum));
 
@@ -155,12 +161,16 @@ double DoubleImage::getXInc() const {
 	return 1.0 / ((double)gdImageSX(image));
 }
 
-list<Point2D> DoubleImage::getPointsInside(const Triangle* t)  {
+const list<Point2D>& DoubleImage::getPointsInside(const Triangle* t)  {
+
 	map<const Triangle*, list<Point2D> >::const_iterator it = pointsCache.find(t);
+
 	if (it != pointsCache.end()) {
 		return it->second;
 	}
-	list<Point2D> result(t->getPoints()->begin(), t->getPoints()->end());
+
+	pointsCache[t] = list<Point2D>(t->getPoints()->begin(), t->getPoints()->end());
+	list<Point2D>& result = pointsCache[t];
 
 	const Rectangle bounds = t->getBoundingBox();
 
@@ -202,7 +212,6 @@ list<Point2D> DoubleImage::getPointsInside(const Triangle* t)  {
 			}
 		}
 	}
-	pointsCache[t] = result;
 	return result;
 }
 
@@ -216,13 +225,13 @@ std::vector<Point2D> DoubleImage::getCorners() {
 }
 
 TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
-	TriFit result(0, 0, -1, TriFit::P012, NULL);
-	size_t minArea = getPointsInside(smaller).size() * MIN_SEARCH_RATIO;
+	TriFit result(0, 0, -1, TriFit::P000, NULL);
+	const size_t minArea = getPointsInside(smaller).size() * MIN_SEARCH_RATIO;
 	for(; start != end; start++) {
 		if (getPointsInside(*start).size() < minArea) {
 			continue;
 		}
-		TriFit f(getOptimalFit(smaller,*start));
+		TriFit f = getOptimalFit(smaller,*start);
 		if (f.error < result.error || result.error < 0) {
 			result = f;
 		}
@@ -244,66 +253,80 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to) {
 		throw logic_error("dimensions don't match!!!");
 	}
 
-	list<Point2D> targetPoints = getPointsInside(t);
-	list<Point2D> sourcePoints = getPointsInside(fit.best);
+	const list<Point2D>& targetPoints = getPointsInside(t);
+	const list<Point2D>& sourcePoints = getPointsInside(fit.best);
+	vector<Point2D> transPoints;
+	vector<pair<const Point2D*, const Point2D*> > allPoints;
 
-	list<pair<Point2D, Point2D> > allPoints;
+	transPoints.reserve(targetPoints.size() + sourcePoints.size());
+	allPoints.reserve(targetPoints.size() + sourcePoints.size());
 
-	AffineTransform trans(*fit.best, *t, fit.pMap);
-	AffineTransform invTrans = trans.getInverse();
+	const AffineTransform trans(*fit.best, *t, fit.pMap);
+	const AffineTransform invTrans = trans.getInverse();
 
 	for (list<Point2D>::const_iterator it = targetPoints.begin(); it != targetPoints.end(); it++) {
-		allPoints.push_back(pair<Point2D, Point2D>(invTrans.transform(*it), *it));
+		transPoints.push_back(invTrans.transform(*it));
+		allPoints.push_back(pair<const Point2D*, const Point2D*>(&transPoints.back(), &(*it)));
 	}
 
 	for (list<Point2D>::const_iterator it = sourcePoints.begin(); it != sourcePoints.end(); it++) {
-		allPoints.push_back(pair<Point2D, Point2D>(*it, trans.transform(*it)));
+		transPoints.push_back(trans.transform(*it));
+		allPoints.push_back(pair<const Point2D*, const Point2D*>(&(*it), &transPoints.back()));
 	}
 
-	for (list<pair<Point2D, Point2D> >::const_iterator it = allPoints.begin(); it != allPoints.end(); it++) {
+	for (vector<pair<const Point2D*, const Point2D*> >::const_iterator it = allPoints.begin(); it != allPoints.end(); it++) {
 
-		const Point2D source = it->first;
-		const Point2D dest = it->second;
+		const Point2D& source = *(it->first);
+		const Point2D& dest = *(it->second);
 
-		int d_x = doubleToIntX(dest.getX());
-		int d_y = doubleToIntY(dest.getY());
+		const int d_x = doubleToIntX(dest.getX());
+		const int d_y = doubleToIntY(dest.getY());
 
 		double newVal = (valueAt(source) * fit.saturation) + fit.brightness;
 
-		int d_a = gdImageAlpha(to, gdImageGetPixel(to, d_x, d_y));
+		const int d_a = gdImageAlpha(to, gdImageGetPixel(to, d_x, d_y));
 		int newAlpha = d_a+1;
 
 		if (newAlpha > 1) {
-			double oldVal = ((double)getPixel(to, d_x, d_y))/((double)gdRedMax);
+			const double oldVal = ((double)getPixel(to, d_x, d_y))/((double)gdRedMax);
 			newVal = ((oldVal*((double)d_a))+newVal)/((double)newAlpha);
 		}
 
-		int newColor = doubleToIntC(newVal);
-		newAlpha = (newAlpha > gdAlphaTransparent)?gdAlphaTransparent:newAlpha;
+		const int newColor = boundColor(doubleToIntC(newVal));
 
-		int c = gdTrueColorAlpha(boundColor(newColor), boundColor(newColor), boundColor(newColor), newAlpha);
+		if (newAlpha > gdAlphaTransparent) {
+			newAlpha = gdAlphaTransparent;
+		}
+
+		const int c = gdTrueColorAlpha(newColor, newColor, newColor, newAlpha);
 
 		gdImageSetPixel(to, d_x, d_y, c);
 	}
 }
 
-map<TriFit::PointMap, list<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger) {
-	list<Point2D> largerPoints = getPointsInside(larger);
+map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger) {
+	const list<Point2D>& largerPoints = getPointsInside(larger);
 
-	map<TriFit::PointMap, list<double> > result;
+	map<TriFit::PointMap, vector<double> > result;
 
-	for (char i = 0; i < TriFit::NUM_MAPS; i++) {
-		TriFit::PointMap m = TriFit::pointMapFromInt(i);
-		AffineTransform trans(*larger, *smaller, m);
-		result[m] = list<double>(0);
-		for (list<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
-			result[m].push_back(valueAt(trans.transform(*it)));
+	for (char i = 0; i < TriFit::NUM_MAPS + 1; i++) {
+		const TriFit::PointMap m = TriFit::pointMapFromInt(i);
+
+		result[m] = vector<double>();
+		vector<double>& v = result[m];
+
+		v.reserve(largerPoints.size());
+
+		if (m != TriFit::P000) {
+			AffineTransform trans(*larger, *smaller, m);
+			for (list<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
+				v.push_back(valueAt(trans.transform(*it)));
+			}
+		} else {
+			for (list<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
+				v.push_back(valueAt(*it));
+			}
 		}
-	}
-	TriFit::PointMap m = TriFit::P000;
-	result[m] = list<double>(0);
-	for (list<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
-		result[m].push_back(valueAt(*it));
 	}
 	return result;
 }

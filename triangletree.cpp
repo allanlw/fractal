@@ -27,7 +27,6 @@ TriangleTree::TriangleTree(DoubleImage image, istream& in) : head(NULL), image(i
 		throw logic_error("NOT VALID FILE");
 	}
 	unsigned short numIds = unserializeUnsignedShort(in);
-	cout << numIds << endl;
 	vector<Triangle*> tris(numIds, NULL);
 
 	for (std::vector<Triangle*>::size_type i = 0; i < numIds; i++) {
@@ -44,8 +43,13 @@ TriangleTree::TriangleTree(DoubleImage image, istream& in) : head(NULL), image(i
 Triangle* TriangleTree::getHead() const {
 	return head;
 }
+
 const std::list<Triangle*>* TriangleTree::getUnassigned() const {
 	return &unassigned;
+}
+
+const std::list<Triangle*>* TriangleTree::getAllTriangles() const {
+	return &allTriangles;
 }
 
 Triangle* TriangleTree::assignOne() {

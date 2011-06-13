@@ -27,6 +27,7 @@ public:
 	TriangleTree(DoubleImage, std::istream& in);
 	Triangle* getHead() const;
 	const std::list<Triangle*>* getUnassigned() const;
+	const std::list<Triangle*>* getAllTriangles() const;
 	Triangle* assignOne();
 	void subdivide(Triangle* t);
 	static void getAllAbove(Triangle* t, std::insert_iterator<std::list<Triangle*> >& it);

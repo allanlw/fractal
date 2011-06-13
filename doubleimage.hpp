@@ -27,14 +27,14 @@ public:
 	double ceilYToGrid(double y) const;
 	double getXInc() const;
 	double getYInc() const;
-	std::list<Point2D> getPointsInside(const Triangle* t);
+	const std::list<Point2D>& getPointsInside(const Triangle* t);
 	Point2D snapToGrid(const Point2D& point) const;
 	double valueAt(double x, double y) const;
 	double valueAt(const Point2D& point) const;
 	double edgeAt(double x, double y) const;
 	double edgeAt(const Point2D& point) const;
 	TriFit getOptimalFit(const Triangle* smaller, const Triangle* larger);
-	std::map<TriFit::PointMap, std::list<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger);
+	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger);
 	static std::vector<Point2D> getCorners();
 	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
 	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to);

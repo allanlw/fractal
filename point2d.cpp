@@ -26,14 +26,6 @@ double Point2D::distanceSquared(const Point2D& other) const {
 	return xdist*xdist+ydist*ydist;
 }
 
-double Point2D::getX() const {
-	return x;
-}
-
-double Point2D::getY() const {
-	return y;
-}
-
 bool Point2D::operator==(const Point2D &other) const {
 	return doublesEqual(this->x, other.x) && doublesEqual(this->y, other.y);
 }

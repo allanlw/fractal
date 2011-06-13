@@ -17,8 +17,12 @@ public:
 	Point2D(double x, double y);
 	Point2D(const Point2D& other);
 	Point2D(std::istream& in);
-	double getX() const;
-	double getY() const;
+	inline double getX() const {
+		return x;
+	}
+	inline double getY() const {
+		return y;
+	}
 	double distance(const Point2D& other) const;
 	double distanceSquared(const Point2D& other) const;
 	bool operator==(const Point2D &other) const;

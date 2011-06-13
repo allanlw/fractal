@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
 		cout << "Image dumped." << endl;
 		out.close();
 	} else {
+		cout << "loading fractal..." << endl; 
 		ifstream in("fractal.bin", ios_base::in | ios_base::binary);
 
 		FILE* noiseHandle = fopen("noise.png", "r");
@@ -52,11 +53,16 @@ int main(int argc, char* argv[]) {
 		DoubleImage img(noise);
 		gdFree(noise);
 		TriangleTree tree(img, in);
+
+		cout << "fractal loaded. (" << tree.getAllTriangles()->size() << " triangles)" << endl;
+
 		for (size_t i = 0; i < NUM_ITERATIONS; i++) {
+			cout << "evaulating iteration #" << i << endl;
 			tree.eval();
 			ostringstream s;
 			s << "e" << i << ".png";
 			string fname = s.str();
+			cout << "saving to " << fname << endl;
 			FILE* oimg = fopen(fname.c_str(), "w");
 			if (oimg == NULL) {
 				cout << "Could not load " << fname << ", dying." << endl;
@@ -64,6 +70,7 @@ int main(int argc, char* argv[]) {
 			}
 			gdImagePng(tree.getImage().getImage(), oimg);
 			fclose(oimg);
+			cout << "iteration #" << i<<" done." << endl;
 		}
 	}
 	return 0;

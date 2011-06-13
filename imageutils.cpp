@@ -70,10 +70,6 @@ void setPixel(gdImagePtr img, int x, int y, unsigned char grey) {
 	gdImageSetPixel(img, x, y, c);
 }
 
-unsigned char boundColor(int c) {
-	return (c>gdRedMax)?(gdRedMax):((c<0)?0:c);
-}
-
 gdImagePtr edgeDetect(const gdImagePtr image, int op(const unsigned char*)) {
 	gdImagePtr result = gdImageCreateTrueColor(gdImageSX(image), gdImageSY(image));
 
