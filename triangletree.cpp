@@ -1,11 +1,14 @@
 #include "triangletree.hpp"
 
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include "gd.h"
 #include <stdexcept>
 
 #include "mathutils.hpp"
 #include "imageutils.hpp"
+#include "output.hpp"
 
 using namespace std;
 
@@ -20,39 +23,37 @@ TriangleTree::TriangleTree(DoubleImage image) : head(NULL), image(image), lastId
 }
 
 TriangleTree::TriangleTree(DoubleImage image, istream& in) : head(NULL), image(image), lastId(0) {
-	char magic[5];
-	in.read(magic, 4);
-	magic[4] = '\0';
-	if (!(string("TREE") == magic)) {
-		throw logic_error("NOT VALID FILE");
-	}
-	unsigned short numIds = unserializeUnsignedShort(in);
-	vector<Triangle*> tris(numIds, NULL);
+	this->unserialize(in);
+}
 
-	for (std::vector<Triangle*>::size_type i = 0; i < numIds; i++) {
-		Triangle* temp = new Triangle(in);
-		tris[temp->getId()] = temp;
+
+TriangleTree::~TriangleTree() {
+	for (std::vector<Triangle*>::iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
+		delete *it;
 	}
-	head = tris[0];
-	for (std::vector<Triangle*>::size_type i = 0; i < numIds; i++) {
-		tris[i]->resolveDependencies(tris);
-	}
-	allTriangles.insert(allTriangles.end(), tris.begin(), tris.end());
+}
+
+TriangleTree::TriangleTree(const TriangleTree& tree) : image(tree.image), lastId(0) {
+	std::stringstream serial(ios_base::out|ios_base::in|ios_base::binary);
+
+	tree.serialize(serial);
+
+	unserialize(serial);
 }
 
 Triangle* TriangleTree::getHead() const {
 	return head;
 }
 
-const std::list<Triangle*>* TriangleTree::getUnassigned() const {
-	return &unassigned;
+const std::deque<Triangle*>& TriangleTree::getUnassigned() const {
+	return unassigned;
 }
 
-const std::list<Triangle*>* TriangleTree::getAllTriangles() const {
-	return &allTriangles;
+const std::vector<Triangle*>& TriangleTree::getAllTriangles() const {
+	return allTriangles;
 }
 
-Triangle* TriangleTree::assignOne() {
+Triangle* TriangleTree::assignOne(double cutoff) {
 	if (unassigned.size() == 0) {
 		return NULL;
 	}
@@ -63,12 +64,18 @@ Triangle* TriangleTree::assignOne() {
 	unassigned.pop_front();
 	next->setId(lastId++);
 
+	if (outputDebug()) {
+		output << "Assigning Triangle #" << next->getId() << "..." << endl;
+	}
+
 	list<Triangle*> above(0);
 	insert_iterator<list<Triangle*> > it(above, above.begin());
 	getAllAbove(next, it);
 	TriFit best = image.getBestMatch(next, above.begin(), above.end());
-	cout << best.error << endl;
-	if (best.error < ERROR_CUTOFF && best.error >= 0) {
+	if (outputDebug()) {
+		output << " - Best Error: " << best.error << endl;
+	}
+	if (best.error < cutoff && best.error >= 0) {
 		next->setTarget(best);
 	} else {
 		subdivide(next);
@@ -77,11 +84,16 @@ Triangle* TriangleTree::assignOne() {
 }
 
 void TriangleTree::subdivide(Triangle* t) {
+	if (image.getEdges() == NULL) {
+		image.generateEdges();
+	}
 	vector<Point2D> points = *(t->getPoints());
 	double r01 = image.getBestDivide(points[0], points[1]);
 	double r02 = image.getBestDivide(points[0], points[2]);
 	double r12 = image.getBestDivide(points[1], points[2]);
-	cout << r01 << " " << r02 << " " << r12 << endl;
+	if (outputDebug()) {
+		output << " - Subdivide Ratios: " << r01 << ", " << r02 << ", " << r12 << endl;
+	}
 
 	t->subdivide(r01, r02, r12);
 
@@ -157,6 +169,26 @@ void TriangleTree::serialize(ostream& out) const {
 	serializeTree(out, head);
 }
 
+void TriangleTree::unserialize(istream& in) {
+	char magic[5];
+	in.read(magic, 4);
+	magic[4] = '\0';
+	if (!(string("TREE") == magic)) {
+		throw logic_error("NOT VALID FILE");
+	}
+	unsigned short numIds = unserializeUnsignedShort(in);
+	allTriangles.resize(numIds, NULL);
+
+	for (std::vector<Triangle*>::size_type i = 0; i < numIds; i++) {
+		Triangle* temp = new Triangle(in);
+		allTriangles[temp->getId()] = temp;
+	}
+	head = allTriangles[0];
+	for (std::vector<Triangle*>::size_type i = 0; i < numIds; i++) {
+		allTriangles[i]->resolveDependencies(allTriangles);
+	}
+}
+
 void TriangleTree::eval() {
 
 	gdImagePtr newImage = gdImageCreateTrueColor(gdImageSX(image.getImage()), gdImageSY(image.getImage()));
@@ -166,7 +198,7 @@ void TriangleTree::eval() {
 
 	gdImageFill(newImage, 0, 0, gdTrueColorAlpha(255, 0, 255, gdAlphaOpaque));
 
-	for (list<Triangle*>::const_iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
+	for (vector<Triangle*>::const_iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
 		if (!(*it)->isTerminal()) {
 			continue;
 		}
@@ -178,4 +210,25 @@ void TriangleTree::eval() {
 
 const DoubleImage& TriangleTree::getImage() const {
 	return image;
+}
+
+TriangleTree TriangleTree::loadFractal(const char* in, int width, int height) {
+
+	if (outputStd()) {
+		output << "loading fractal " << in << "..." << endl;
+	}
+
+	gdImagePtr noise = blankCanvas(width, height);
+	DoubleImage img(noise);
+	gdFree(noise);
+
+	ifstream inStream(in, ios_base::in | ios_base::binary);
+	TriangleTree tree(img, inStream);
+	inStream.close();
+
+	if (outputStd()) {
+		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;
+	}
+
+	return tree;
 }

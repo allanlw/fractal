@@ -33,6 +33,7 @@ public:
 	double valueAt(const Point2D& point) const;
 	double edgeAt(double x, double y) const;
 	double edgeAt(const Point2D& point) const;
+	void generateEdges();
 	TriFit getOptimalFit(const Triangle* smaller, const Triangle* larger);
 	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger);
 	static std::vector<Point2D> getCorners();
@@ -41,6 +42,7 @@ public:
 	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=true) const;
 	void setImage(gdImagePtr image);
 	gdImagePtr getImage() const;
+	gdImagePtr getEdges() const;
 	~DoubleImage();
 
 	int doubleToIntX(double x) const;

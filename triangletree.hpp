@@ -3,7 +3,7 @@
 
 #include "triangle.hpp"
 
-#include <list>
+#include <deque>
 #include <iterator>
 #include <cstddef>
 #include <ostream>
@@ -17,18 +17,21 @@ class TriangleTree {
 private:
 	Triangle* head;
 	DoubleImage image;
-	std::list<Triangle*> unassigned;
-	std::list<Triangle*> allTriangles;
+	std::deque<Triangle*> unassigned;
+	std::vector<Triangle*> allTriangles;
 	unsigned short lastId;
 
 	void subivide(Triangle* t);
+	void unserialize(std::istream& in);
 public:
 	explicit TriangleTree(DoubleImage image);
+	TriangleTree(const TriangleTree& tree);
 	TriangleTree(DoubleImage, std::istream& in);
+	~TriangleTree();
 	Triangle* getHead() const;
-	const std::list<Triangle*>* getUnassigned() const;
-	const std::list<Triangle*>* getAllTriangles() const;
-	Triangle* assignOne();
+	const std::deque<Triangle*>& getUnassigned() const;
+	const std::vector<Triangle*>& getAllTriangles() const;
+	Triangle* assignOne(double cutoff);
 	void subdivide(Triangle* t);
 	static void getAllAbove(Triangle* t, std::insert_iterator<std::list<Triangle*> >& it);
 	static void getAllBelow(Triangle* t, std::insert_iterator<std::list<Triangle*> >& it);
@@ -41,6 +44,9 @@ public:
 	static void serializeChildren(std::ostream& out, const Triangle* t);
 	void eval();
 	const DoubleImage& getImage() const;
+
+	static TriangleTree loadFractal(const char* in, int width, int height);
 };
 
 #endif
+

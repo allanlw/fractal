@@ -14,23 +14,33 @@ using namespace std;
 DoubleImage::DoubleImage(gdImagePtr image)  {
 	this->image = gdImageCreateTrueColor(gdImageSX(image), gdImageSY(image));
 	gdImageCopy(this->image, image, 0, 0, 0, 0, gdImageSX(image), gdImageSY(image));
-	if (EDGE_DETECT_SOBEL) {
-		edges = edgeDetectSobel(this->image);
-	} else {
-		edges = edgeDetectLaplace(this->image);
-	}
+	this->edges = NULL;
 }
 
 DoubleImage::DoubleImage(const DoubleImage& img) {
 	this->image = gdImageCreateTrueColor(gdImageSX(img.image), gdImageSY(img.image));
 	gdImageCopy(this->image, img.image, 0, 0, 0, 0, gdImageSX(this->image), gdImageSY(this->image));
-	this->edges = gdImageCreateTrueColor(gdImageSX(img.edges), gdImageSY(img.edges));
-	gdImageCopy(this->edges, img.edges, 0, 0, 0, 0, gdImageSX(this->edges), gdImageSY(this->edges));
+	if (img.edges != NULL) {
+		this->edges = gdImageCreateTrueColor(gdImageSX(img.edges), gdImageSY(img.edges));
+		gdImageCopy(this->edges, img.edges, 0, 0, 0, 0, gdImageSX(this->edges), gdImageSY(this->edges));
+	} else {
+		this->edges = NULL;
+	}
 }
 
 DoubleImage::~DoubleImage() {
 	gdFree(image);
-	gdFree(edges);
+	if (this->edges != NULL) {
+		gdFree(edges);
+	}
+}
+
+void DoubleImage::generateEdges() {
+	if (EDGE_DETECT_SOBEL) {
+		this->edges = edgeDetectSobel(this->image);
+	} else {
+		this->edges = edgeDetectLaplace(this->image);
+	}
 }
 
 double DoubleImage::snapXToGrid(double x) const {
@@ -123,10 +133,6 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 		double rangeSum = sum(allConfigs[m].begin(), allConfigs[m].end());
 		double rangeSquaresSum = sumSquares(allConfigs[m].begin(), allConfigs[m].end());
 		double productSum = dotProduct(allConfigs[tm].begin(), allConfigs[tm].end(), allConfigs[m].begin(), allConfigs[m].end());
-
-
-//		cout << " RS: " << rangeSum << " RSS: " << rangeSquaresSum << "pS: " << productSum;
-//		cout << " dS: " << domainSum << " DSS: " << domainSquaresSum << " n: " << n <<  endl;
 
 		double s;
 		double o;
@@ -264,6 +270,10 @@ gdImagePtr DoubleImage::getImage() const {
 	return image;
 }
 
+gdImagePtr DoubleImage::getEdges() const {
+	return edges;
+}
+
 void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to) {
 
 	if (gdImageSX(image) != gdImageSX(to) || gdImageSY(image) != gdImageSY(to)) {
@@ -348,6 +358,10 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 }
 
 double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, bool high) const {
+
+	if (this->edges == NULL) {
+		throw logic_error("Edges not generated!");
+	}
 
 	double initialXDiff = second.getX() - first.getX();
 	double initialYDiff = second.getY() - first.getY();
