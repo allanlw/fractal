@@ -27,12 +27,12 @@ double Point2D::distanceSquared(const Point2D& other) const {
 }
 
 bool Point2D::operator==(const Point2D &other) const {
-	return doublesEqual(this->x, other.x) && doublesEqual(this->y, other.y);
+	return doublesEqual(x, other.x) && doublesEqual(y, other.y);
 }
 
 std::string Point2D::str () const {
 	std::ostringstream s;
-	s << "(" << this->x << ", " << this->y << ")";
+	s << "(" << x << ", " << y << ")";
 	return s.str();
 }
 

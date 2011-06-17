@@ -15,7 +15,7 @@ class DoubleImage {
 private:
 	gdImagePtr image;
 	gdImagePtr edges;
-	std::map<const Triangle*, std::list<Point2D> > pointsCache;
+	std::map<const Triangle*, std::vector<Point2D> > pointsCache;
 public:
 	DoubleImage(gdImagePtr image);
 	DoubleImage(const DoubleImage& img);
@@ -27,7 +27,7 @@ public:
 	double ceilYToGrid(double y) const;
 	double getXInc() const;
 	double getYInc() const;
-	const std::list<Point2D>& getPointsInside(const Triangle* t);
+	const std::vector<Point2D>& getPointsInside(const Triangle* t);
 	Point2D snapToGrid(const Point2D& point) const;
 	double valueAt(double x, double y) const;
 	double valueAt(const Point2D& point) const;
@@ -38,12 +38,11 @@ public:
 	static std::vector<Point2D> getCorners();
 	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
 	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to);
-	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=false) const;
+	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=true) const;
 	void setImage(gdImagePtr image);
 	gdImagePtr getImage() const;
 	~DoubleImage();
 
-	static int doubleToIntC(double c);
 	int doubleToIntX(double x) const;
 	int doubleToIntY(double y) const;
 	static int doubleToInt(double x, int min, int max);

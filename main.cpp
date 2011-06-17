@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 		cout << "Image dumped." << endl;
 		out.close();
 	} else {
-		cout << "loading fractal..." << endl; 
+		cout << "loading fractal..." << endl;
 		ifstream in("fractal.bin", ios_base::in | ios_base::binary);
 
 		FILE* noiseHandle = fopen("noise.png", "r");

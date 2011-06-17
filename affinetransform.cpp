@@ -67,6 +67,18 @@ Point2D AffineTransform::transform(const Point2D& point) const {
 	return Point2D(x * m00 + y * m01 + m02, x * m10 + y * m11 + m12);
 }
 
+Point2D AffineTransform::inverseTransform(const Point2D& point) const {
+	double det = this->getDeterminant();
+	if (abs(det) < ZERO) {
+		throw InvalidTransformException();
+	}
+
+	double x = point.getX() - m02;
+	double y = point.getY() - m12;
+
+	return Point2D((x * m11 - y * m01)/det, (y * m00 - x * m10)/det);
+}
+
 double AffineTransform::getDeterminant() const {
 	return m00 * m11 - m01 * m10;
 }

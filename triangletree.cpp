@@ -67,6 +67,7 @@ Triangle* TriangleTree::assignOne() {
 	insert_iterator<list<Triangle*> > it(above, above.begin());
 	getAllAbove(next, it);
 	TriFit best = image.getBestMatch(next, above.begin(), above.end());
+	cout << best.error << endl;
 	if (best.error < ERROR_CUTOFF && best.error >= 0) {
 		next->setTarget(best);
 	} else {

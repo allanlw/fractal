@@ -3,7 +3,7 @@
 
 
 #ifndef ERROR_CUTOFF
-#define ERROR_CUTOFF 1000
+#define ERROR_CUTOFF 10*10
 #endif
 
 #ifndef SAME_SIDE_TECHNIQUE

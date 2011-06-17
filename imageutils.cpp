@@ -43,20 +43,20 @@ gdImagePtr edgeDetectLaplace(const gdImagePtr image) {
 	return edgeDetect(image, _laplace);
 }
 
-
-
-unsigned char getPixel(const gdImagePtr img, int x, int y) {
-	if (x < 0) {
-		x += gdImageSX(img);
-	}
-	if (x >= gdImageSX(img)) {
-		x -= gdImageSX(img);
-	}
-	if (y < 0) {
-		y += gdImageSY(img);
-	}
-	if (y >= gdImageSY(img)) {
-		y -= gdImageSY(img);
+unsigned char getPixel(const gdImagePtr img, int x, int y, bool check) {
+	if (check) {
+		if (x < 0) {
+			x += gdImageSX(img);
+		}
+		if (x >= gdImageSX(img)) {
+			x -= gdImageSX(img);
+		}
+		if (y < 0) {
+			y += gdImageSY(img);
+		}
+		if (y >= gdImageSY(img)) {
+			y -= gdImageSY(img);
+		}
 	}
 	int c = gdImageGetPixel(img, x, y);
 	unsigned char r = gdImageRed(img, c);
