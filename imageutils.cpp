@@ -105,3 +105,9 @@ void clearAlpha(gdImagePtr img) {
 		}
 	}
 }
+
+gdImagePtr blankCanvas(int width, int height) {
+	gdImagePtr result = gdImageCreateTrueColor(width, height);
+	gdImageFill(result, gdRedMax/2, gdGreenMax/2, gdBlueMax/2);
+	return result;
+}

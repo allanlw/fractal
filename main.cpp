@@ -1,77 +1,271 @@
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include "gd.h"
+#include "getopt.h"
 
 #include "doubleimage.hpp"
 #include "triangletree.hpp"
 #include "constant.hpp"
+#include "imageutils.hpp"
+#include "output.hpp"
 
 using namespace std;
 
+enum op_mode {
+	M_ENCODE,
+	M_DECODE,
+	M_HELP,
+	M_INFO
+};
+
+unsigned char outputLevel = 1;
+
+std::ostream& output = std::cout;
+
+static int width = DEFAULT_WIDTH;
+static int height = DEFAULT_HEIGHT;
+static int iterations = DEFAULT_ITERATIONS;
+
+static const struct option longOptions[] = {
+	{"verbose", no_argument, 0, 'v'},
+	{"quiet", no_argument, 0, 'q'},
+	{"encode", no_argument, 0, 'e'},
+	{"decode", no_argument, 0, 'd'},
+	{"output", required_argument, 0, 'o'},
+	{"help", no_argument, 0, 'H'},
+	{"width", required_argument, 0, 'w'},
+	{"height", required_argument, 0, 'h'},
+	{"iterations", required_argument, 0, 'i'}
+};
+
+static const char* shortOptions = "vqedo:Hw:h:i:";
+
+int encodeImage(const char* in, const char* out);
+int decodeImage(const char* in, const char* out);
+int printHelp();
+int infoImage(const char* in);
+
 int main(int argc, char* argv[]) {
-	if (argc > 1) {
-		FILE* lennaHandle = fopen(argv[1], "r");
-		if (lennaHandle == NULL) {
-			cout << "Could not load lenna.png, dying." << endl;
+	op_mode mode = M_HELP;
+	char * outputFilename = NULL;
+
+	int optIndex = 0;
+	int c;
+
+	while ((c = getopt_long(argc, argv,
+	              shortOptions, longOptions, &optIndex)) != -1) {
+		switch (c) {
+		case 'v':
+			outputLevel++;
+			break;
+		case 'q':
+			if (outputLevel != 0) {
+				outputLevel--;
+			}
+			break;
+		case 'e':
+			mode = M_ENCODE;
+			break;
+		case 'd':
+			mode = M_DECODE;
+			break;
+		case 'H':
+			mode = M_HELP;
+			break;
+		case 'o':
+			outputFilename = optarg;
+			break;
+		case 'w':
+			width = atoi(optarg);
+			break;
+		case 'h':
+			height = atoi(optarg);
+			break;
+		case 'i':
+			iterations = atoi(optarg);
+			break;
+		default:
+		case '?':
 			return 1;
+			break;
 		}
-		gdImagePtr lenna = gdImageCreateFromPng(lennaHandle);
-		fclose(lennaHandle);
+	}
 
-		DoubleImage image(lenna);
-		TriangleTree tree(image);
+	int result = 0;
 
-		for (int i = 0; true; i++) {
-			Triangle* cur = tree.assignOne();
-			if (cur == NULL) break;
-			cout << tree.getLastId();
-			cout << " - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
-			if (cur->isTerminal()) {
-				cout << " Error: " << cur->getTarget().error << endl;
+	switch (mode) {
+	case M_HELP:
+		result = printHelp();
+		break;
+	case M_ENCODE:
+		if (optind == argc) {
+			if (outputError()) {
+				output << "Encoding requires a source image." << endl;
+			}
+			result = 1;
+		} else {
+			result = encodeImage(argv[optind], outputFilename);
+		}
+		break;
+	case M_DECODE:
+		if (optind == argc) {
+			if (outputError()) {
+				output << "Decoding requires a source fractal." << endl;
+			}
+			result = 1;
+		} else {
+			result = decodeImage(argv[optind], outputFilename);
+		}
+		break;
+	case M_INFO:
+		if (optind == argc) {
+			if (outputError()) {
+				output << "Info requires a source fractal." << endl;
+			}
+			result = 1;
+		} else {
+			result = infoImage(argv[optind]);
+		}
+		break;
+	}
+	output.flush();
+	return result;
+}
+
+int encodeImage(const char* in, const char* out) {
+
+	if (out == NULL) {
+		out = DEFAULT_ENC_FNAME;
+	}
+
+	FILE* inputHandle = fopen(in, "r");
+
+	if (inputHandle == NULL) {
+		if (outputError()) {
+			output << "Could not load " << in << ", dying." << endl;
+		}
+		return 1;
+	}
+
+	gdImagePtr lenna = gdImageCreateFromPng(inputHandle);
+	fclose(inputHandle);
+
+	DoubleImage img(lenna);
+	TriangleTree tree(img);
+
+	gdFree(lenna);
+
+	if (outputStd()) {
+		output << in << " loaded, encoding..." << endl;
+	}
+
+	Triangle* cur;
+
+	while((cur = tree.assignOne()) != NULL) {
+		if (outputVerbose()) {
+			output << tree.getLastId();
+			output << " - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
+			if (outputDebug() && cur->isTerminal()) {
+				output << " Error: " << cur->getTarget().error << endl;
 			}
 		}
+	}
 
-		ofstream out("fractal.bin", ios_base::out | ios_base::trunc | ios_base::binary);
-		cout << "Dumping Image..." << endl;
-		tree.serialize(out);
-		cout << "Image dumped." << endl;
-		out.close();
-	} else {
-		cout << "loading fractal..." << endl;
-		ifstream in("fractal.bin", ios_base::in | ios_base::binary);
+	ofstream outStream("fractal.bin", ios_base::out | ios_base::trunc | ios_base::binary);
+	if (outputStd()) {
+		output << "Saving fractal (" << tree.getLastId() << " triangles) to " << out << "." << endl;
+	}
+	tree.serialize(outStream);
+	outStream.close();
+	if (outputStd()) {
+		output << "Done." << endl;
+	}
+	return 0;
+}
 
-		FILE* noiseHandle = fopen("noise.png", "r");
-		if (noiseHandle == NULL) {
-			cout << "Could not load noise.png, dying." << endl;
-			return 1;
+int decodeImage(const char * in, const char * out) {
+
+	if (out == NULL) {
+		out = DEFAULT_DEC_FNAME;
+	}
+
+	if (outputStd()) {
+		output << "loading " << in << "..." << endl;
+	}
+	gdImagePtr noise = blankCanvas(width, height);
+	DoubleImage img(noise);
+	gdFree(noise);
+
+	ifstream inStream(in, ios_base::in | ios_base::binary);
+	TriangleTree tree(img, inStream);
+	inStream.close();
+
+	if (outputStd()) {
+		output << "fractal loaded. (" << tree.getAllTriangles()->size() << " triangles)" << endl;
+		output << "rendering fractal..." << endl;
+	}
+
+
+	for (int i = 0; i < iterations; i++) {
+		if (outputVerbose()) {
+			output << "evaulating iteration #" << i << endl;
 		}
-		gdImagePtr noise = gdImageCreateFromPng(noiseHandle);
-		fclose (noiseHandle);
-
-		DoubleImage img(noise);
-		gdFree(noise);
-		TriangleTree tree(img, in);
-
-		cout << "fractal loaded. (" << tree.getAllTriangles()->size() << " triangles)" << endl;
-
-		for (size_t i = 0; i < NUM_ITERATIONS; i++) {
-			cout << "evaulating iteration #" << i << endl;
-			tree.eval();
+		tree.eval();
+		if (false) {
 			ostringstream s;
 			s << "e" << i << ".png";
 			string fname = s.str();
-			cout << "saving to " << fname << endl;
+			output << "saving to " << fname << endl;
 			FILE* oimg = fopen(fname.c_str(), "w");
 			if (oimg == NULL) {
-				cout << "Could not load " << fname << ", dying." << endl;
+				output << "Could not load " << fname << ", dying." << endl;
 				return 1;
 			}
 			gdImagePng(tree.getImage().getImage(), oimg);
 			fclose(oimg);
-			cout << "iteration #" << i<<" done." << endl;
 		}
+		if (outputVerbose()) {
+			output << "iteration #" << i <<" done." << endl;
+		}
+	}
+
+	if (outputStd()) {
+		output << "rendering done, saving to " << out << "..." << endl;
+	}
+
+	FILE* outputImg = fopen(out, "w");
+	if (outputImg == NULL) {
+		if (outputError()) {
+			output << "could not open " << out << " for writing." << endl;
+		}
+		return 1;
+	}
+
+	gdImagePng(tree.getImage().getImage(), outputImg);
+	fclose(outputImg);
+	if (outputStd()) {
+		output << "Done." << endl;
+	}
+	return 0;
+}
+
+int printHelp() {
+	if (outputStd()) {
+		output << "This program is used for encoding and decoding triangular fractal images." << endl;
+		output << endl;
+		output << "Usage: fractal [-Hvqed] [-o output] [-w width] [-h height] [-i iterations] input" << endl;
+		output << "\t-H, --help           Print this help message." << endl;
+		output << "\t-v, --verbose        Print verbose output." << endl;
+		output << "\t-q, --quiet          Surpress all output." << endl;
+		output << "\t-e, --encode         Encode the input image (png) into a fractal representation." << endl;
+		output << "\t-d, --decode         Decode the input fractal into a raster representation (png)." << endl;
+		output << "\t-o, --output=fname   Output to fname. This could be either a fractal or a raster." << endl;
+		output << "\t-w, --width=num      Set the output width to num." << endl;
+		output << "\t-h, --height=num     Set the output height to num." << endl;
+		output << "\t-i, --iterations=num Set the number of iterations for decoding to num." << endl; 
 	}
 	return 0;
 }

@@ -19,7 +19,6 @@ DoubleImage::DoubleImage(gdImagePtr image)  {
 	} else {
 		edges = edgeDetectLaplace(this->image);
 	}
-	gdImagePng(edges, fopen("edges.png", "w"));
 }
 
 DoubleImage::DoubleImage(const DoubleImage& img) {

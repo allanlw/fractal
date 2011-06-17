@@ -1,6 +1,33 @@
 #ifndef CONSTANT_HPP_
 #define CONSTANT_HPP_
 
+#ifndef DEFAULT_ENC_FNAME
+#define DEFAULT_ENC_FNAME "fractal.bin"
+#endif
+
+#ifndef DEFAULT_DEC_FNAME
+#define DEFAULT_DEC_FNAME "fractal.png"
+#endif
+
+#ifndef DEFAULT_WIDTH
+#ifdef DEFAULT_HEIGHT
+#define DEFAULT_WIDTH DEFAULT_HEIGHT
+#else
+#define DEFAULT_WIDTH 256
+#endif
+#endif
+
+#ifndef DEFAULT_HEIGHT
+#ifdef DEFAULT_WIDTH
+#define DEFAULT_HEIGHT DEFAULT_WIDTH
+#else
+#define DEFAULT_HEIGHT 256
+#endif
+#endif
+
+#ifndef DEFAULT_ITERATIONS
+#define DEFAULT_ITERATIONS 20
+#endif
 
 #ifndef ERROR_CUTOFF
 #define ERROR_CUTOFF 10*10
@@ -12,10 +39,6 @@
 
 #ifndef EDGE_DETECT_SOBEL
 #define EDGE_DETECT_SOBEL true
-#endif
-
-#ifndef NUM_ITERATIONS
-#define NUM_ITERATIONS 20
 #endif
 
 #ifndef MIN_SUBDIVIDE_RATIO
