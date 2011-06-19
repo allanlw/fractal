@@ -24,8 +24,13 @@ void Vector2D::normalize() {
 	}
 }
 
-Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) : 
+Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) :
 magnitude(unit?1.0:origin.distance(point2)), angle(atan2(point2.getY() - origin.getY(), point2.getX() - origin.getX())) {
+	normalize();
+}
+
+Vector2D::Vector2D(const double magnitude, const double angle) :
+	magnitude(magnitude), angle(angle) {
 	normalize();
 }
 
@@ -35,11 +40,6 @@ double Vector2D::getMagnitude() const {
 
 double Vector2D::angleBetween(const Vector2D & other) const {
 	return abs(other.angle - angle);
-}
-
-Vector2D::Vector2D(const double magnitude, const double angle) :
-	magnitude(magnitude), angle(angle) {
-	normalize();
 }
 
 Vector2D Vector2D::getOpposite() const {

@@ -22,8 +22,9 @@ AffineTransform::AffineTransform(double m00, double m01, double m02,
 AffineTransform::AffineTransform(const Triangle& source,
 		const Triangle& target, TriFit::PointMap pointMap) {
 
-	const std::vector<Point2D> sourcePoints = *(source.getPoints());
-	const std::vector<Point2D> targetPoints = *(target.getPoints());
+	const std::vector<Point2D>& sourcePoints = source.getPoints();
+	const std::vector<Point2D>& targetPoints = target.getPoints();
+
 	double s_x[] = { sourcePoints[0].getX(), sourcePoints[1].getX(),
 			sourcePoints[2].getX() };
 	double s_y[] = { sourcePoints[0].getY(), sourcePoints[1].getY(),
@@ -61,8 +62,8 @@ AffineTransform::AffineTransform(const Triangle& source,
 }
 
 Point2D AffineTransform::transform(const Point2D& point) const {
-	double x = point.getX();
-	double y = point.getY();
+	const double& x = point.getX();
+	const double& y = point.getY();
 
 	return Point2D(x * m00 + y * m01 + m02, x * m10 + y * m11 + m12);
 }
@@ -90,10 +91,10 @@ AffineTransform AffineTransform::getInverse() const {
 	}
 
 	return AffineTransform(m11 / det, // m00
-			-m10 / det, // m10
 			-m01 / det, // m01
-			m00 / det, // m11
 			(m01 * m12 - m11 * m02) / det, // m02
+			-m10 / det, // m10
+			m00 / det, // m11
 			(m10 * m02 - m00 * m12) / det // m12
 	);
 }

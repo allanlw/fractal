@@ -16,6 +16,8 @@ private:
 	gdImagePtr image;
 	gdImagePtr edges;
 	std::map<const Triangle*, std::vector<Point2D> > pointsCache;
+
+	void mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest);
 public:
 	DoubleImage(gdImagePtr image);
 	DoubleImage(const DoubleImage& img);
@@ -28,7 +30,7 @@ public:
 	double getXInc() const;
 	double getYInc() const;
 	const std::vector<Point2D>& getPointsInside(const Triangle* t);
-	Point2D snapToGrid(const Point2D& point) const;
+	std::vector<Point2D> getPointsOnLine(const Point2D& point1, const Point2D& point2) const;
 	double valueAt(double x, double y) const;
 	double valueAt(const Point2D& point) const;
 	double edgeAt(double x, double y) const;

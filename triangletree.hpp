@@ -15,7 +15,6 @@
 
 class TriangleTree {
 private:
-	Triangle* head;
 	DoubleImage image;
 	std::deque<Triangle*> unassigned;
 	std::vector<Triangle*> allTriangles;

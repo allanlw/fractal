@@ -1,6 +1,7 @@
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
 
 #include "mathutils.hpp"
 #include "point2d.hpp"
@@ -26,8 +27,20 @@ double Point2D::distanceSquared(const Point2D& other) const {
 	return xdist*xdist+ydist*ydist;
 }
 
+double Point2D::originDistance() const {
+	return sqrt(originDistanceSquared());
+}
+
+double Point2D::originDistanceSquared() const {
+	return x*x + y*y;
+}
+
 bool Point2D::operator==(const Point2D &other) const {
 	return doublesEqual(x, other.x) && doublesEqual(y, other.y);
+}
+
+bool Point2D::operator<(const Point2D& other) const {
+	return originDistanceSquared() < other.originDistanceSquared();
 }
 
 std::string Point2D::str () const {

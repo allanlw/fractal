@@ -17,15 +17,18 @@ public:
 	Point2D(double x, double y);
 	Point2D(const Point2D& other);
 	Point2D(std::istream& in);
-	inline double getX() const {
+	inline const double& getX() const {
 		return x;
 	}
-	inline double getY() const {
+	inline const double& getY() const {
 		return y;
 	}
 	double distance(const Point2D& other) const;
 	double distanceSquared(const Point2D& other) const;
+	double originDistance() const;
+	double originDistanceSquared() const;
 	bool operator==(const Point2D &other) const;
+	bool operator<(const Point2D& other) const;
 	Vector2D operator-(const Point2D& other) const;
 	Point2D& operator=(const Point2D& other);
 	std::string str () const;

@@ -43,6 +43,7 @@ public:
 	Triangle(const Point2D& point0, const Point2D& point1,
 			const Point2D& point2);
 	Triangle(std::istream& in);
+	~Triangle();
 	//Getters and Setters
 	void setNextSibling(Triangle* next);
 	void setParent(Triangle* parent);
@@ -53,8 +54,8 @@ public:
 	Triangle* getParent() const;
 	bool isTerminal() const;
 	TriFit getTarget() const;
-	const std::vector<Point2D>* getPoints() const;
-	const std::vector<Triangle*>* getChildren() const;
+	const std::vector<Point2D>& getPoints() const;
+	const std::vector<Triangle*>& getChildren() const;
 	unsigned short getId() const;
 	void setId(unsigned short id);
 

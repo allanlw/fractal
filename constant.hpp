@@ -49,4 +49,12 @@
 #define MIN_SEARCH_RATIO 2
 #endif
 
+#ifndef PREDICT_ACCURACY
+#define PREDICT_ACCURACY 4
+#endif
+
+#ifndef USE_HEURISTICS
+#define USE_HEURISTICS 0
+#endif
+
 #endif

@@ -58,10 +58,10 @@ unsigned char getPixel(const gdImagePtr img, int x, int y, bool check) {
 			y -= gdImageSY(img);
 		}
 	}
-	int c = gdImageGetPixel(img, x, y);
-	unsigned char r = gdImageRed(img, c);
-	unsigned char g = gdImageGreen(img, c);
-	unsigned char b = gdImageBlue(img, c);
+	const int c = gdImageGetPixel(img, x, y);
+	const int r = gdImageRed(img, c);
+	const int g = gdImageGreen(img, c);
+	const int b = gdImageBlue(img, c);
 	return (r+g+b)/3;
 }
 

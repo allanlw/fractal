@@ -48,6 +48,11 @@ inline double signum(double d) {
 	return (d>0) ? 1.0 : ((d<0) ? -1.0 : 0);
 }
 
+inline double predictError(double area) {
+// This is just a heuristic I came up with in excel.
+	return (4E07)*pow(area, 2.1398);
+}
+
 void serializeDouble(std::ostream& out, double d);
 void serializeUnsignedShort(std::ostream& out, unsigned short s);
 

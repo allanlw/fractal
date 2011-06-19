@@ -12,9 +12,9 @@
 
 using namespace std;
 
-TriangleTree::TriangleTree(DoubleImage image) : head(NULL), image(image), lastId(0) {
+TriangleTree::TriangleTree(DoubleImage image) : image(image), lastId(0) {
 	std::vector<Point2D> corners = image.getCorners();
-	head = new Triangle(corners[0], corners[1], corners[2]);
+	Triangle* head = new Triangle(corners[0], corners[1], corners[2]);
 	head->setNextSibling(new Triangle(corners[0], corners[3], corners[2]));
 	unassigned.push_back(head);
 	unassigned.push_back(head->getNextSibling());
@@ -22,7 +22,7 @@ TriangleTree::TriangleTree(DoubleImage image) : head(NULL), image(image), lastId
 	allTriangles.push_back(head->getNextSibling());
 }
 
-TriangleTree::TriangleTree(DoubleImage image, istream& in) : head(NULL), image(image), lastId(0) {
+TriangleTree::TriangleTree(DoubleImage image, istream& in) : image(image), lastId(0) {
 	this->unserialize(in);
 }
 
@@ -42,7 +42,7 @@ TriangleTree::TriangleTree(const TriangleTree& tree) : image(tree.image), lastId
 }
 
 Triangle* TriangleTree::getHead() const {
-	return head;
+	return allTriangles.front();
 }
 
 const std::deque<Triangle*>& TriangleTree::getUnassigned() const {
@@ -54,7 +54,7 @@ const std::vector<Triangle*>& TriangleTree::getAllTriangles() const {
 }
 
 Triangle* TriangleTree::assignOne(double cutoff) {
-	if (unassigned.size() == 0) {
+	if (unassigned.empty()) {
 		return NULL;
 	}
 	Triangle* next = unassigned.front();
@@ -67,18 +67,28 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 	if (outputDebug()) {
 		output << "Assigning Triangle #" << next->getId() << "..." << endl;
 	}
-
+#if USE_HEURISTICS == 1
+	if (predictError(next->getArea()) > cutoff*PREDICT_ACCURACY) {
+		subdivide(next);
+		return next;
+	}
+#endif
 	list<Triangle*> above(0);
 	insert_iterator<list<Triangle*> > it(above, above.begin());
 	getAllAbove(next, it);
-	TriFit best = image.getBestMatch(next, above.begin(), above.end());
-	if (outputDebug()) {
-		output << " - Best Error: " << best.error << endl;
-	}
-	if (best.error < cutoff && best.error >= 0) {
-		next->setTarget(best);
-	} else {
+	if (above.empty()) {
 		subdivide(next);
+		return next;
+	} else {
+		TriFit best = image.getBestMatch(next, above.begin(), above.end());
+		if (outputDebug()) {
+			output << " - Best Error: " << best.error << endl;
+		}
+		if (best.error < cutoff && best.error >= 0) {
+			next->setTarget(best);
+		} else {
+			subdivide(next);
+		}
 	}
 	return next;
 }
@@ -87,7 +97,7 @@ void TriangleTree::subdivide(Triangle* t) {
 	if (image.getEdges() == NULL) {
 		image.generateEdges();
 	}
-	vector<Point2D> points = *(t->getPoints());
+	const vector<Point2D>& points = t->getPoints();
 	double r01 = image.getBestDivide(points[0], points[1]);
 	double r02 = image.getBestDivide(points[0], points[2]);
 	double r12 = image.getBestDivide(points[1], points[2]);
@@ -97,7 +107,7 @@ void TriangleTree::subdivide(Triangle* t) {
 
 	t->subdivide(r01, r02, r12);
 
-	for(vector<Triangle*>::const_iterator it = t->getChildren()->begin(); it != t->getChildren()->end(); it++) {
+	for(vector<Triangle*>::const_iterator it = t->getChildren().begin(); it != t->getChildren().end(); it++) {
 		unassigned.push_back(*it);
 		allTriangles.push_back(*it);
 	}
@@ -113,11 +123,11 @@ void TriangleTree::getAllAbove(Triangle* t, insert_iterator<list<Triangle*> >& i
 }
 
 void TriangleTree::getAllBelow(Triangle* t, insert_iterator<list<Triangle*> >& it) {
-	const vector<Triangle*>* children = t->getChildren();
-	if (children != NULL && children->size() > 0) {
-		*it = (*children)[0];
-		getAllSiblings((*children)[0], it);
-		getAllBelow((*children)[0], it);
+	const vector<Triangle*>& children = t->getChildren();
+	if (!children.empty()) {
+		*it = children[0];
+		getAllSiblings(children[0], it);
+		getAllBelow(children[0], it);
 	}
 }
 
@@ -148,8 +158,8 @@ unsigned short TriangleTree::getLastId() {
 
 void TriangleTree::serializeChildren(ostream& out, const Triangle* t) {
 	t->serialize(out);
-	if (t->getChildren()->size() != 0) {
-		const vector<Triangle*> children = *(t->getChildren());
+	if (!t->isTerminal()) {
+		const vector<Triangle*>& children = t->getChildren();
 		for (vector<Triangle*>::const_iterator it=children.begin(); it != children.end(); it++) {
 			serializeChildren(out, *it);
 		}
@@ -166,7 +176,7 @@ void TriangleTree::serializeTree(ostream& out, const Triangle* t) {
 void TriangleTree::serialize(ostream& out) const {
 	out << "TREE";
 	serializeUnsignedShort(out, lastId);
-	serializeTree(out, head);
+	serializeTree(out, allTriangles.front());
 }
 
 void TriangleTree::unserialize(istream& in) {
@@ -183,7 +193,7 @@ void TriangleTree::unserialize(istream& in) {
 		Triangle* temp = new Triangle(in);
 		allTriangles[temp->getId()] = temp;
 	}
-	head = allTriangles[0];
+
 	for (std::vector<Triangle*>::size_type i = 0; i < numIds; i++) {
 		allTriangles[i]->resolveDependencies(allTriangles);
 	}

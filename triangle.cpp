@@ -45,44 +45,60 @@ Triangle::Triangle(istream& in) : nextSibling(NULL), prevSibling(NULL), parent(N
 	}
 }
 
+Triangle::~Triangle() {
+	delete unresolvedDependencies;
+}
+
 Triangle * Triangle::getNextSibling() const {
 	return this->nextSibling;
 }
+
 void Triangle::setNextSibling(Triangle* next) {
 	this->nextSibling = next;
 	next->prevSibling = this;
 }
+
 Triangle * Triangle::getPrevSibling() const {
 	return this->prevSibling;
 }
+
 void Triangle::setPrevSibling(Triangle* prev) {
 	this->prevSibling = prev;
 	prev->nextSibling = this;
 }
+
 Triangle * Triangle::getParent() const {
 	return this->parent;
 }
+
 void Triangle::setParent(Triangle* parent) {
 	this->parent = parent;
 }
+
 TriFit Triangle::getTarget() const {
 	return this->target;
 }
+
 void Triangle::setTarget(TriFit target) {
 	this->target = target;
 }
-const std::vector<Point2D>* Triangle::getPoints() const {
-	return &(this->points);
+
+const std::vector<Point2D>& Triangle::getPoints() const {
+	return points;
 }
-const std::vector<Triangle*>* Triangle::getChildren() const {
-	return &(this->children);
+
+const std::vector<Triangle*>& Triangle::getChildren() const {
+	return children;
 }
+
 bool Triangle::isTerminal() const {
-	return this->children.size() == 0;
+	return this->children.empty();
 }
+
 unsigned short Triangle::getId() const {
 	return this->id;
 }
+
 void Triangle::setId(unsigned short id) {
 	this->id = id;
 }
@@ -199,9 +215,9 @@ void Triangle::subdivide(double r01, double r02, double r12) {
 
 void Triangle::assignNextChildSibling(Triangle* next, Triangle* t) {
 	if (next != NULL) {
-		const vector<Triangle*>* nextChildren = next->getChildren();
-		if (nextChildren != NULL && nextChildren->size() > 0) {
-			t->setNextSibling((*nextChildren)[0]);
+		const vector<Triangle*>& nextChildren = next->getChildren();
+		if (!nextChildren.empty()) {
+			t->setNextSibling(nextChildren[0]);
 		} else {
 			assignNextChildSibling(next->getNextSibling(), t);
 		}
@@ -210,9 +226,9 @@ void Triangle::assignNextChildSibling(Triangle* next, Triangle* t) {
 
 void Triangle::assignPrevChildSibling(Triangle* prev, Triangle* t) {
 	if (prev != NULL) {
-		const vector<Triangle*>* prevChildren = prev->getChildren();
-		if (prevChildren != NULL && prevChildren->size() > 0) {
-			t->setPrevSibling((*prevChildren)[prevChildren->size()-1]);
+		const vector<Triangle*>& prevChildren = prev->getChildren();
+		if (!prevChildren.empty()) {
+			t->setPrevSibling(prevChildren[prevChildren.size()-1]);
 		} else {
 			assignPrevChildSibling(prev->getPrevSibling(), t);
 		}
@@ -228,8 +244,8 @@ string Triangle::str() const {
 }
 
 Point2D Triangle::calcCenteroid() const {
-	double x = (points[0].getX() + points[1].getX() + points[2].getX())/3;
-	double y = (points[0].getY() + points[1].getY() + points[2].getY())/3;
+	double x = (points[0].getX() + points[1].getX() + points[2].getX())/3.;
+	double y = (points[0].getY() + points[1].getY() + points[2].getY())/3.;
 	return Point2D(x,y);
 }
 
@@ -255,7 +271,7 @@ void Triangle::serialize(ostream& out) const {
 		it->serialize(out);
 	}
 	out.put((char)children.size());
-	if (children.size() != 0) {
+	if (!children.empty()) {
 		for (vector<Triangle*>::const_iterator it = children.begin(); it != children.end(); it++) {
 			(*it)->serializeID(out);
 		}
@@ -289,12 +305,12 @@ void Triangle::resolveDependencies(const vector<Triangle*>& tris) {
 	} else {
 		target.best = NULL;
 	}
-	if (unresolvedDependencies->children.size() != 0) {
+	if (!unresolvedDependencies->children.empty()) {
 		children.reserve(unresolvedDependencies->children.size());
 		for (size_t i = 0; i < unresolvedDependencies->children.size(); i++) {
 			children.push_back(tris[unresolvedDependencies->children[i]]);
 		}
 	}
-//	delete unresolvedDependencies;
-//	unresolvedDependencies = NULL;
+	delete unresolvedDependencies;
+	unresolvedDependencies = NULL;
 }
