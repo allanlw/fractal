@@ -1,10 +1,3 @@
-/*
- * affinetransform.hpp
- *
- *  Created on: May 1, 2011
- *      Author: Allan
- */
-
 #ifndef AFFINETRANSFORM_HPP_
 #define AFFINETRANSFORM_HPP_
 

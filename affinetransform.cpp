@@ -1,10 +1,3 @@
-/*
- * affinetransform.cpp
- *
- *  Created on: May 1, 2011
- *      Author: Allan
- */
-
 #include <vector>
 #include <cmath>
 #include <sstream>

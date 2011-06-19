@@ -69,9 +69,9 @@ public:
 		Rectangle rect1 = tri1->getBoundingBox();
 		Rectangle rect2 = tri2->getBoundingBox();
 		Rectangle rect3 = tri3->getBoundingBox();
-		vector<Point2D> points1 = *(tri1->getPoints());
-		vector<Point2D> points2 = *(tri2->getPoints());
-		vector<Point2D> points3 = *(tri3->getPoints());
+		vector<Point2D> points1 = tri1->getPoints();
+		vector<Point2D> points2 = tri2->getPoints();
+		vector<Point2D> points3 = tri3->getPoints();
 		CPPUNIT_ASSERT_MESSAGE(points1[0].str() + " in " + rect1.str(),rect1.pointInside(points1[0]));
 		CPPUNIT_ASSERT_MESSAGE(points1[1].str() + " in " + rect1.str(),rect1.pointInside(points1[1]));
 		CPPUNIT_ASSERT_MESSAGE(points1[2].str() + " in " + rect1.str(),rect1.pointInside(points1[2]));
