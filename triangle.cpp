@@ -138,6 +138,7 @@ bool Triangle::pointInside(const Point2D& point) const {
 		return pointInsideBarycentric(point);
 	}
 }
+
 bool Triangle::pointInsideSameSide(const Point2D& point) const {
 	const Vector2D ba(points[0], points[1], true);
 	const Vector2D pa(points[0], point, true);
@@ -177,6 +178,7 @@ bool Triangle::pointInsideBarycentric(const Point2D& point) const {
 
 	return (u > 0) && (v > 0) && ((u + v) < 1.0);
 }
+
 void Triangle::subdivide(double r01, double r02, double r12) {
 	Point2D midpoint01(points[0].getX() +
                                ((points[1].getX() - points[0].getX()) * r01),

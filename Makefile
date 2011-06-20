@@ -1,6 +1,6 @@
 LDFLAGS = -lm -lgd
 TESTLDFLAGS = -lcppunit
-CXXFLAGS = -Wall
+CXXFLAGS = -Wall -std=c++0x
 
 # -msse2 does NOT inline calls to cos,tan, etc. is this bad?
 

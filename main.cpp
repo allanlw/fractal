@@ -23,6 +23,10 @@ static int height = DEFAULT_HEIGHT;
 static int iterations = DEFAULT_ITERATIONS;
 static double errorCutoff = DEFAULT_ERROR_CUTOFF;
 
+static const char* name = "Fractal Image Compressor";
+
+static const char* version = "0.1a";
+
 static const struct option longOptions[] = {
 	{"verbose", no_argument, 0, 'v'},
 	{"quiet", no_argument, 0, 'q'},
@@ -33,14 +37,17 @@ static const struct option longOptions[] = {
 	{"width", required_argument, 0, 'w'},
 	{"height", required_argument, 0, 'h'},
 	{"iterations", required_argument, 0, 'i'},
-	{"cutoff", required_argument, 0, 'c'}
+	{"cutoff", required_argument, 0, 'c'},
+	{"info", no_argument, 0, 'I'},
+	{"version", no_argument, 0, 'V'}
 };
 
-static const char* shortOptions = "vqedo:Hw:h:i:c:";
+static const char* shortOptions = "vqedo:Hw:h:i:c:IV";
 
 static int encodeImage(const char* in, const char* out);
 static int decodeImage(const char* in, const char* out);
 static int printHelp();
+static int printVersion();
 static int infoImage(const char* in);
 
 int main(int argc, char* argv[]) {
@@ -49,7 +56,8 @@ int main(int argc, char* argv[]) {
 		M_ENCODE,
 		M_DECODE,
 		M_HELP,
-		M_INFO
+		M_INFO,
+		M_VERSION
 	} mode = M_UNDEF;
 	char * outputFilename = NULL;
 
@@ -91,6 +99,12 @@ int main(int argc, char* argv[]) {
 		case 'c':
 			errorCutoff = atof(optarg);
 			errorCutoff *= errorCutoff;
+			break;
+		case 'I':
+			mode = M_INFO;
+			break;
+		case 'V':
+			mode = M_VERSION;
 			break;
 		default:
 		case '?':
@@ -139,6 +153,9 @@ int main(int argc, char* argv[]) {
 			result = infoImage(argv[optind]);
 		}
 		break;
+	case M_VERSION:
+		result = printVersion();
+		break;
 	}
 	output.flush();
 	return result;
@@ -184,6 +201,9 @@ int encodeImage(const char* in, const char* out) {
 		if (outputVerbose()) {
 			output << "Triangle #" << cur->getId();
 			output << " assigned - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
+			output << tree.getUnassigned().size() << " unassigned / ";
+			output << tree.getAllTriangles().size() << " total. (";
+			output << (((double)tree.getUnassigned().size())/((double)tree.getAllTriangles().size())*100) << "%)" << endl;
 		}
 	}
 
@@ -255,11 +275,13 @@ int decodeImage(const char * in, const char * out) {
 }
 
 int printHelp() {
+	printVersion();
 	if (outputStd()) {
 		output << "This program is used for encoding and decoding triangular fractal images." << endl;
 		output << endl;
 		output << "Usage: fractal [-Hvqed] [-o output] [-w width] [-h height] [-c cutoff] [-i iterations] input" << endl;
 		output << "\t-H, --help           Print this help message." << endl;
+		output << "\t-V, --version        Print version information." << endl;
 		output << "\t-v, --verbose        Print verbose output (twice for debug)." << endl;
 		output << "\t-q, --quiet          Surpress all output." << endl;
 		output << "\t-e, --encode         Encode the input image (png) into a fractal representation." << endl;
@@ -269,11 +291,19 @@ int printHelp() {
 		output << "\t-h, --height=num     Set the output height to num." << endl;
 		output << "\t-i, --iterations=num Set the number of iterations for decoding to num." << endl;
 		output << "\t-c, --cutoff=float   Set the error cutoff to float (rms intensity difference)." << endl;
+		output << "\t-I, --info           Prints information about the input fractal." << endl;
 	}
 	return 0;
 }
 
 int infoImage(const char* in) {
 	TriangleTree tree = TriangleTree::loadFractal(in, width, height);
+	return 0;
+}
+
+int printVersion() {
+	if (outputStd()) {
+		output << name << " " << version << endl;
+	}
 	return 0;
 }

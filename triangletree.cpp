@@ -228,13 +228,19 @@ TriangleTree TriangleTree::loadFractal(const char* in, int width, int height) {
 		output << "loading fractal " << in << "..." << endl;
 	}
 
-	gdImagePtr noise = blankCanvas(width, height);
+	ifstream inStream(in, ios_base::in | ios_base::binary);
+
+	inStream.seekg (0, ios::end);
+	unsigned long length = inStream.tellg();
+	inStream.seekg (0, ios::beg);
+
+	gdImagePtr noise = blankCanvas(width, height, length);
 	DoubleImage img(noise);
 	gdFree(noise);
 
-	ifstream inStream(in, ios_base::in | ios_base::binary);
 	TriangleTree tree(img, inStream);
 	inStream.close();
+
 
 	if (outputStd()) {
 		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;

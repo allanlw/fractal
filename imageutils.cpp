@@ -1,6 +1,7 @@
 #include "imageutils.hpp"
 
 #include <cmath>
+#include <random>
 
 using namespace std;
 
@@ -106,8 +107,17 @@ void clearAlpha(gdImagePtr img) {
 	}
 }
 
-gdImagePtr blankCanvas(int width, int height) {
+gdImagePtr blankCanvas(int width, int height, unsigned long seed) {
+	std::mt19937 rand;
+
 	gdImagePtr result = gdImageCreateTrueColor(width, height);
-	gdImageFill(result, gdRedMax/2, gdGreenMax/2, gdBlueMax/2);
+//	gdImageFill(result, gdRedMax/2, gdGreenMax/2, gdBlueMax/2);
+
+	for(int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			setPixel(result, x, y, (rand() % (gdRedMax/2)) + (gdRedMax/4) );
+		}
+	}
+
 	return result;
 }

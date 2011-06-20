@@ -21,8 +21,8 @@ unsigned short unserializeUnsignedShort(istream& in) {
 
 double unserializeDouble(istream& in) {
 	union {
-	double d;
-	char bytes[8];
+		double d;
+		char bytes[8];
 	};
 	in.read(bytes, 8);
 	return d;

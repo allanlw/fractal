@@ -263,15 +263,11 @@ std::vector<Point2D> DoubleImage::getCorners() {
 
 TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
 	TriFit result(0, 0, -1, TriFit::P000, NULL);
-#if USE_HEURISTICS == 1
 	const size_t minArea = getPointsInside(smaller).size() * MIN_SEARCH_RATIO;
-#endif
 	for(; start != end; start++) {
-#if USE_HEURISTICS == 1
 		if (getPointsInside(*start).size() < minArea) {
 			continue;
 		}
-#endif
 		TriFit f = getOptimalFit(smaller,*start);
 		if (f.error < result.error || result.error < 0) {
 			result = f;
@@ -302,7 +298,8 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to) {
 
 	const vector<Point2D>& targetPoints = getPointsInside(t);
 
-	const AffineTransform trans = AffineTransform(*t, *fit.best, fit.pMap);
+//	const AffineTransform trans = AffineTransform(*t, *fit.best, fit.pMap);
+	const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap).getInverse();
 
 	for (vector<Point2D>::const_iterator it = targetPoints.begin(); it != targetPoints.end(); it++) {
 		mapPoint(to, fit, trans.transform(*it), *it);
@@ -386,18 +383,26 @@ double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, b
 		if ( ((high)?(bestVal < val):(bestVal > val)) || bestR < 0) {
 			const double rx = (it->getX() - first.getX())/initialXDiff;
 			const double ry = (it->getY() - first.getY())/initialYDiff;
+			double r;
 			if (doublesEqual(initialXDiff, 0)) {
-				bestR = ry;
+				r = ry;
 			} else if (doublesEqual(initialYDiff, 0)) {
-				bestR = rx;
+				r = rx;
 			} else {
-				bestR = (rx+ry)/2.;
+				r = (rx+ry)/2.;
 			}
-			bestVal = val;
+			if (r > MIN_SUBDIVIDE_RATIO && r < 1-MIN_SUBDIVIDE_RATIO) {
+				bestR = r;
+				bestVal = val;
+			}
 		}
 	}
 
-	return bestR;
+	if (bestR < 0) {
+		return 1/2.0;
+	} else {
+		return bestR;
+	}
 }
 
 vector<Point2D> DoubleImage::getPointsOnLine(const Point2D& point1, const Point2D& point2) const {
