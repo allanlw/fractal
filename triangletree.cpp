@@ -199,21 +199,26 @@ void TriangleTree::unserialize(istream& in) {
 	}
 }
 
-void TriangleTree::eval() {
+void TriangleTree::eval(DoubleImage::SamplingType sType, bool fixErrors) {
 
 	gdImagePtr newImage = gdImageCreateTrueColor(gdImageSX(image.getImage()), gdImageSY(image.getImage()));
 
 	gdImageAlphaBlending(newImage, 0);
 	gdImageSaveAlpha(newImage, 1);
 
-	gdImageFill(newImage, 0, 0, gdTrueColorAlpha(255, 0, 255, gdAlphaOpaque));
+	gdImageFill(newImage, 0, 0, ERROR_COLOR);
 
 	for (vector<Triangle*>::const_iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
 		if (!(*it)->isTerminal()) {
 			continue;
 		}
-		image.mapPoints(*it, (*it)->getTarget(), newImage);
+		image.mapPoints(*it, (*it)->getTarget(), newImage, sType);
 	}
+
+	if (fixErrors) {
+		interpolateErrors(newImage);
+	}
+
 	clearAlpha(newImage);
 	image.setImage(newImage);
 }
@@ -222,13 +227,7 @@ const DoubleImage& TriangleTree::getImage() const {
 	return image;
 }
 
-TriangleTree TriangleTree::loadFractal(const char* in, int width, int height) {
-
-	if (outputStd()) {
-		output << "loading fractal " << in << "..." << endl;
-	}
-
-	ifstream inStream(in, ios_base::in | ios_base::binary);
+TriangleTree TriangleTree::loadFractal(istream& inStream, int width, int height) {
 
 	inStream.seekg (0, ios::end);
 	unsigned long length = inStream.tellg();
@@ -239,12 +238,6 @@ TriangleTree TriangleTree::loadFractal(const char* in, int width, int height) {
 	gdFree(noise);
 
 	TriangleTree tree(img, inStream);
-	inStream.close();
-
-
-	if (outputStd()) {
-		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;
-	}
 
 	return tree;
 }

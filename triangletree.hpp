@@ -41,10 +41,10 @@ public:
 	void serialize(std::ostream& out) const;
 	static void serializeTree(std::ostream& out, const Triangle* t);
 	static void serializeChildren(std::ostream& out, const Triangle* t);
-	void eval();
+	void eval(DoubleImage::SamplingType sType, bool fixErrors);
 	const DoubleImage& getImage() const;
 
-	static TriangleTree loadFractal(const char* in, int width, int height);
+	static TriangleTree loadFractal(std::istream& inStream, int width, int height);
 };
 
 #endif

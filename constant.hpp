@@ -33,6 +33,14 @@
 #define DEFAULT_ERROR_CUTOFF 10*10
 #endif
 
+#ifndef DEFAULT_SAMPLING_TYPE
+#define DEFAULT_SAMPLING_TYPE DoubleImage::T_SUBSAMPLE
+#endif
+
+#ifndef DEFAULT_FIX_ERRORS
+#define DEFAULT_FIX_ERRORS true
+#endif
+
 #ifndef SAME_SIDE_TECHNIQUE
 #define SAME_SIDE_TECHNIQUE false
 #endif
@@ -55,6 +63,14 @@
 
 #ifndef USE_HEURISTICS
 #define USE_HEURISTICS 0
+#endif
+
+#ifndef ERROR_COLOR
+#define ERROR_COLOR gdTrueColorAlpha(gdRedMax, 0, gdBlueMax, gdAlphaOpaque)
+#endif
+
+#ifndef PIXELS_FOR_INTERP
+#define PIXELS_FOR_INTERP 4
 #endif
 
 #endif

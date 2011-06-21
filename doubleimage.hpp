@@ -12,6 +12,12 @@
 #include "point2d.hpp"
 
 class DoubleImage {
+public:
+	enum SamplingType {
+		T_SUBSAMPLE,
+		T_SUPERSAMPLE,
+		T_BOTHSAMPLE
+	};
 private:
 	gdImagePtr image;
 	gdImagePtr edges;
@@ -40,7 +46,7 @@ public:
 	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger);
 	static std::vector<Point2D> getCorners();
 	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
-	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to);
+	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type);
 	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=true) const;
 	void setImage(gdImagePtr image);
 	gdImagePtr getImage() const;
@@ -49,7 +55,6 @@ public:
 
 	int doubleToIntX(double x) const;
 	int doubleToIntY(double y) const;
-	static int doubleToInt(double x, int min, int max);
 };
 
 #endif

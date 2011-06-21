@@ -46,38 +46,27 @@ void DoubleImage::generateEdges() {
 }
 
 double DoubleImage::snapXToGrid(double x) const {
-	return round ( x * (gdImageSX(image)-1) ) / (gdImageSX(image) - 1);
+	return round( x * (gdImageSX(image)-1) ) / (gdImageSX(image) - 1);
 }
 
 double DoubleImage::snapYToGrid(double y) const {
-	return round (y * (gdImageSY(image)-1) ) / (gdImageSY(image) - 1);
+	return round(y * (gdImageSY(image)-1) ) / (gdImageSY(image) - 1);
 }
 
 double DoubleImage::floorXToGrid(double x) const {
-	return floor (x * (gdImageSX(image)-1) ) / (gdImageSX(image) - 1);
+	return floor(x * (gdImageSX(image)-1) ) / (gdImageSX(image) - 1);
 }
 
 double DoubleImage::floorYToGrid(double y) const {
-	return floor (y * (gdImageSY(image)-1) ) / (gdImageSY(image) - 1);
+	return floor(y * (gdImageSY(image)-1) ) / (gdImageSY(image) - 1);
 }
 
 double DoubleImage::ceilXToGrid(double x) const {
-	return ceil( x * (gdImageSX(image)-1) ) / (gdImageSX(image) - 1);
+	return ceil (x * (gdImageSX(image)-1) ) / (gdImageSX(image) - 1);
 }
 
 double DoubleImage::ceilYToGrid(double y) const {
-	return ceil( y * (gdImageSY(image)-1) ) / (gdImageSY(image) - 1);
-}
-
-int DoubleImage::doubleToInt(double x, int min, int max) {
-	const int _x = (int) round (x * max);
-	if (_x < min) {
-		return min;
-	} else if (_x >= max) {
-		return max;
-	} else {
-		return _x;
-	}
+	return ceil (y * (gdImageSY(image)-1) ) / (gdImageSY(image) - 1);
 }
 
 int DoubleImage::doubleToIntX(double x) const {
@@ -119,21 +108,23 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 
 	const TriFit::PointMap tm = TriFit::P000;
 
-	const vector<double>& largerPoints = allConfigs[tm];
+	const vector<double>& smallerPoints = allConfigs[tm];
 
-	double domainSum = sum(largerPoints.begin(), largerPoints.end());
-	double domainSquaresSum = sumSquares(largerPoints.begin(), largerPoints.end());
-	double n = largerPoints.size();
-
-	double denom = ((n * n * domainSquaresSum) - (domainSum * domainSum));
+	double rangeSum = sum(smallerPoints.begin(), smallerPoints.end());
+	double rangeSquaresSum = sumSquares(smallerPoints.begin(), smallerPoints.end());
+	double n = smallerPoints.size();
 
 	for (map<TriFit::PointMap, vector<double> >::const_iterator it = allConfigs.begin(); it != allConfigs.end(); it++) {
 		if (it->first == TriFit::P000) {
 			continue;
 		}
-		double rangeSum = sum(it->second.begin(), it->second.end());
-		double rangeSquaresSum = sumSquares(it->second.begin(), it->second.end());
-		double productSum = dotProduct(largerPoints.begin(), largerPoints.end(), it->second.begin(), it->second.end());
+		const vector<double>& largerPoints = it->second;
+		double domainSum = sum(largerPoints.begin(), largerPoints.end());
+		double domainSquaresSum = sumSquares(largerPoints.begin(), largerPoints.end());
+		double productSum = dotProduct(largerPoints.begin(), largerPoints.end(),
+		                               smallerPoints.begin(), smallerPoints.end());
+
+		double denom = ((n * n * domainSquaresSum) - (domainSum * domainSum));
 
 		double s;
 		double o;
@@ -291,20 +282,41 @@ gdImagePtr DoubleImage::getEdges() const {
 	return edges;
 }
 
-void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to) {
+void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type) {
 	if (gdImageSX(image) != gdImageSX(to) || gdImageSY(image) != gdImageSY(to)) {
 		throw logic_error("dimensions don't match!!!");
 	}
 
-	const vector<Point2D>& targetPoints = getPointsInside(t);
+	switch(type) {
+	case T_SUBSAMPLE: {
+		const vector<Point2D>& points = getPointsInside(t);
 
-//	const AffineTransform trans = AffineTransform(*t, *fit.best, fit.pMap);
-	const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap).getInverse();
+//		const AffineTransform trans = AffineTransform(*t, *fit.best, fit.pMap);
+		const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap).getInverse();
 
-	for (vector<Point2D>::const_iterator it = targetPoints.begin(); it != targetPoints.end(); it++) {
-		mapPoint(to, fit, trans.transform(*it), *it);
+		for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
+			mapPoint(to, fit, trans.transform(*it), *it);
+		}
+
+		break;
 	}
+	case T_SUPERSAMPLE: {
+		const vector<Point2D>& points = getPointsInside(fit.best);
 
+		const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap);
+
+		for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
+			mapPoint(to, fit, *it, trans.transform(*it));
+		}
+
+		break;
+	}
+	case T_BOTHSAMPLE: {
+		mapPoints(t, fit, to, T_SUPERSAMPLE);
+		mapPoints(t, fit, to, T_SUBSAMPLE);
+		break;
+	}
+	}
 }
 
 void DoubleImage::mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest) {
@@ -329,7 +341,7 @@ void DoubleImage::mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& sour
 }
 
 map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger) {
-	const vector<Point2D>& largerPoints = getPointsInside(larger);
+	const vector<Point2D>& smallerPoints = getPointsInside(smaller);
 
 	map<TriFit::PointMap, vector<double> > result;
 
@@ -339,10 +351,10 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 		result[m] = vector<double>(0);
 		vector<double>& v = result[m];
 
-		v.reserve(largerPoints.size());
+		v.reserve(smallerPoints.size());
 
-		const AffineTransform trans(*larger, *smaller, m);
-		for (vector<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
+		const AffineTransform trans = AffineTransform(*larger, *smaller, m).getInverse();
+		for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
 			v.push_back(valueAt(trans.transform(*it)));
 		}
 	}
@@ -350,9 +362,9 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 	result[TriFit::P000] = vector<double>(0);
 	vector<double>& v = result[TriFit::P000];
 
-	v.reserve(largerPoints.size());
+	v.reserve(smallerPoints.size());
 
-	for (vector<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
+	for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
 		v.push_back(valueAt(*it));
 	}
 

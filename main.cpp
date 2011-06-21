@@ -22,6 +22,8 @@ static int width = DEFAULT_WIDTH;
 static int height = DEFAULT_HEIGHT;
 static int iterations = DEFAULT_ITERATIONS;
 static double errorCutoff = DEFAULT_ERROR_CUTOFF;
+static DoubleImage::SamplingType sType = DEFAULT_SAMPLING_TYPE;
+static bool fixErrors = DEFAULT_FIX_ERRORS;
 
 static const char* name = "Fractal Image Compressor";
 
@@ -39,7 +41,12 @@ static const struct option longOptions[] = {
 	{"iterations", required_argument, 0, 'i'},
 	{"cutoff", required_argument, 0, 'c'},
 	{"info", no_argument, 0, 'I'},
-	{"version", no_argument, 0, 'V'}
+	{"version", no_argument, 0, 'V'},
+	{"subsample", no_argument, 0, '1'},
+	{"supersample", no_argument, 0, '2'},
+	{"bothsample", no_argument, 0, '3'},
+	{"fixerrors", no_argument, 0, '4'},
+	{"no-fixerrors", no_argument, 0, '5'}
 };
 
 static const char* shortOptions = "vqedo:Hw:h:i:c:IV";
@@ -105,6 +112,21 @@ int main(int argc, char* argv[]) {
 			break;
 		case 'V':
 			mode = M_VERSION;
+			break;
+		case '1':
+			sType = DoubleImage::T_SUBSAMPLE;
+			break;
+		case '2':
+			sType = DoubleImage::T_SUPERSAMPLE;
+			break;
+		case '3':
+			sType = DoubleImage::T_BOTHSAMPLE;
+			break;
+		case '4':
+			fixErrors = true;
+			break;
+		case '5':
+			fixErrors = false;
 			break;
 		default:
 		case '?':
@@ -207,12 +229,22 @@ int encodeImage(const char* in, const char* out) {
 		}
 	}
 
-	ofstream outStream("fractal.bin", ios_base::out | ios_base::trunc | ios_base::binary);
+	ofstream outStream(out, ios_base::out | ios_base::trunc | ios_base::binary);
+
+	if (!outStream.good()) {
+		if (outputError()) {
+			output << "Could not open file " << out << ", dying." << endl;
+		}
+		return 1;
+	}
+
 	if (outputStd()) {
 		output << "Saving fractal (" << tree.getLastId() << " triangles) to " << out << "." << endl;
 	}
+
 	tree.serialize(outStream);
 	outStream.close();
+
 	if (outputStd()) {
 		output << "Done." << endl;
 	}
@@ -225,9 +257,26 @@ int decodeImage(const char * in, const char * out) {
 		out = DEFAULT_DEC_FNAME;
 	}
 
-	TriangleTree tree = TriangleTree::loadFractal(in, width, height);
+	if (outputStd()) {
+		output << "loading fractal " << in << "..." << endl;
+	}
+
+	ifstream inStream(in, ios_base::in | ios_base::binary);
+
+	if (!inStream.good()) {
+		if (outputError()) {
+			output << "Could not open file " << in << ", dying." << endl;
+		}
+		return 1;
+	}
+
+	TriangleTree tree = TriangleTree::loadFractal(inStream, width, height);
+
+	inStream.close();
 
 	if (outputStd()) {
+		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;
+
 		output << "rendering fractal..." << endl;
 	}
 
@@ -235,7 +284,7 @@ int decodeImage(const char * in, const char * out) {
 		if (outputVerbose()) {
 			output << "evaulating iteration #" << i << endl;
 		}
-		tree.eval();
+		tree.eval(sType, fixErrors);
 		if (false) {
 			ostringstream s;
 			s << "e" << i << ".png";
@@ -259,6 +308,7 @@ int decodeImage(const char * in, const char * out) {
 	}
 
 	FILE* outputImg = fopen(out, "w");
+
 	if (outputImg == NULL) {
 		if (outputError()) {
 			output << "could not open " << out << " for writing." << endl;
@@ -292,12 +342,36 @@ int printHelp() {
 		output << "\t-i, --iterations=num Set the number of iterations for decoding to num." << endl;
 		output << "\t-c, --cutoff=float   Set the error cutoff to float (rms intensity difference)." << endl;
 		output << "\t-I, --info           Prints information about the input fractal." << endl;
+		output << "\t    --subsample      Subsamples when resizing down." << endl;
+		output << "\t    --supersample    Supersamples when resizing down. Potentially lots of artifacts." << endl;
+		output << "\t    --bothsample     Subsamples and Supersamples. Highest Quality." << endl;
+		output << "\t    --(no-)fixerrors Interpolate (or not) to fix errors. Default is " << (DEFAULT_FIX_ERRORS?"fix":"don't fix") << "." << endl;
 	}
 	return 0;
 }
 
 int infoImage(const char* in) {
-	TriangleTree tree = TriangleTree::loadFractal(in, width, height);
+	if (outputStd()) {
+		output << "loading fractal " << in << "..." << endl;
+	}
+
+	ifstream inStream(in, ios_base::in | ios_base::binary);
+
+	if (!inStream.good()) {
+		if (outputError()) {
+			output << "Could not open file " << in << ", dying." << endl;
+		}
+		return 1;
+	}
+
+	TriangleTree tree = TriangleTree::loadFractal(inStream, width, height);
+
+	inStream.close();
+
+	if (outputStd()) {
+		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;
+	}
+
 	return 0;
 }
 

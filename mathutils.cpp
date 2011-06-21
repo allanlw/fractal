@@ -27,3 +27,8 @@ double unserializeDouble(istream& in) {
 	in.read(bytes, 8);
 	return d;
 }
+
+int doubleToInt(double d, int min, int max) {
+	const int _x = (int)round(d * max);
+	return ( (_x <= min)?(min):((_x > max)?(max):(_x)) );
+}

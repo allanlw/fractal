@@ -3,6 +3,9 @@
 #include <cmath>
 #include <random>
 
+#include "constant.hpp"
+#include "output.hpp"
+
 using namespace std;
 
 static int _sobel(const unsigned char *data) {
@@ -44,26 +47,32 @@ gdImagePtr edgeDetectLaplace(const gdImagePtr image) {
 	return edgeDetect(image, _laplace);
 }
 
-unsigned char getPixel(const gdImagePtr img, int x, int y, bool check) {
-	if (check) {
-		if (x < 0) {
-			x += gdImageSX(img);
-		}
-		if (x >= gdImageSX(img)) {
-			x -= gdImageSX(img);
-		}
-		if (y < 0) {
-			y += gdImageSY(img);
-		}
-		if (y >= gdImageSY(img)) {
-			y -= gdImageSY(img);
-		}
+int wrappedGetPixel(const gdImagePtr img, int x, int y) {
+	if (x < 0) {
+		x += gdImageSX(img);
 	}
-	const int c = gdImageGetPixel(img, x, y);
+	if (x >= gdImageSX(img)) {
+		x -= gdImageSX(img);
+	}
+	if (y < 0) {
+		y += gdImageSY(img);
+	}
+	if (y >= gdImageSY(img)) {
+		y -= gdImageSY(img);
+	}
+	return gdImageGetPixel(img, x, y);
+}
+
+unsigned char getGrey(const gdImagePtr img, int c) {
 	const int r = gdImageRed(img, c);
 	const int g = gdImageGreen(img, c);
 	const int b = gdImageBlue(img, c);
 	return (r+g+b)/3;
+}
+
+unsigned char getPixel(const gdImagePtr img, int x, int y, bool check) {
+	const int c = check?wrappedGetPixel(img, x, y):gdImageGetPixel(img,x,y);
+	return getGrey(img, c);
 }
 
 void setPixel(gdImagePtr img, int x, int y, unsigned char grey) {
@@ -120,4 +129,54 @@ gdImagePtr blankCanvas(int width, int height, unsigned long seed) {
 	}
 
 	return result;
+}
+
+void interpolateErrors(gdImagePtr image) {
+	if (outputVerbose()) {
+		output << "Interpolating to correct error pixels..." << endl;
+	}
+	bool success = true;
+	for (int x = 0; x < gdImageSX(image); x++) {
+		for (int y = 0; y < gdImageSY(image); y++) {
+			if (gdImageGetPixel(image, x, y) == ERROR_COLOR) {
+				success = (success && interpolatePixel(image, x, y));
+			}
+		}
+	}
+	if (!success) {
+		if (outputVerbose()) {
+			output << "Interpolation incomplete, interpolating again." << endl;
+		}
+		interpolateErrors(image);
+	}
+}
+
+bool interpolatePixel(gdImagePtr image, int x, int y) {
+	const int pix[8] = {
+		wrappedGetPixel(image, x-1, y-1),
+		wrappedGetPixel(image, x,   y-1),
+		wrappedGetPixel(image, x+1, y-1),
+		wrappedGetPixel(image, x-1, y  ),
+		wrappedGetPixel(image, x+1, y  ),
+		wrappedGetPixel(image, x-1, y+1),
+		wrappedGetPixel(image, x,   y+1),
+		wrappedGetPixel(image, x+1, y+1)
+	};
+
+	size_t total = 0;
+	size_t numColored = 0;
+
+	for (size_t i = 0; i < 8; i++) {
+		if (pix[i] != ERROR_COLOR) {
+			numColored++;
+			total += getGrey(image, pix[i]);
+		}
+	}
+
+	if (numColored < PIXELS_FOR_INTERP) {
+		return false;
+	} else {
+		setPixel(image, x, y, total/numColored);
+		return true;
+	}
 }
