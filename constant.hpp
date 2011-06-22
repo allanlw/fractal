@@ -9,11 +9,15 @@
 #define DEFAULT_DEC_FNAME "fractal.png"
 #endif
 
+#ifndef DEFAULT_SIZE
+#define DEFAULT_SIZE 256
+#endif
+
 #ifndef DEFAULT_WIDTH
 #ifdef DEFAULT_HEIGHT
 #define DEFAULT_WIDTH DEFAULT_HEIGHT
 #else
-#define DEFAULT_WIDTH 256
+#define DEFAULT_WIDTH DEFAULT_SIZE
 #endif
 #endif
 
@@ -21,7 +25,7 @@
 #ifdef DEFAULT_WIDTH
 #define DEFAULT_HEIGHT DEFAULT_WIDTH
 #else
-#define DEFAULT_HEIGHT 256
+#define DEFAULT_HEIGHT DEFAULT_SIZE
 #endif
 #endif
 
@@ -30,7 +34,7 @@
 #endif
 
 #ifndef DEFAULT_ERROR_CUTOFF
-#define DEFAULT_ERROR_CUTOFF 10*10
+#define DEFAULT_ERROR_CUTOFF 10
 #endif
 
 #ifndef DEFAULT_SAMPLING_TYPE
@@ -39,6 +43,14 @@
 
 #ifndef DEFAULT_FIX_ERRORS
 #define DEFAULT_FIX_ERRORS true
+#endif
+
+#ifndef DEFAULT_OUTPUT_LEVEL
+#define DEFAULT_OUTPUT_LEVEL 1
+#endif
+
+#ifndef DEFAULT_OUTPUT_STREAM
+#define DEFAULT_OUTPUT_STREAM std::cout
 #endif
 
 #ifndef SAME_SIDE_TECHNIQUE

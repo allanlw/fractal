@@ -14,9 +14,9 @@
 
 using namespace std;
 
-unsigned char outputLevel = 1;
+unsigned char outputLevel = DEFAULT_OUTPUT_LEVEL;
 
-std::ostream& output = std::cout;
+std::ostream& output = DEFAULT_OUTPUT_STREAM;
 
 static int width = DEFAULT_WIDTH;
 static int height = DEFAULT_HEIGHT;
@@ -46,13 +46,14 @@ static const struct option longOptions[] = {
 	{"supersample", no_argument, 0, '2'},
 	{"bothsample", no_argument, 0, '3'},
 	{"fixerrors", no_argument, 0, '4'},
-	{"no-fixerrors", no_argument, 0, '5'}
+	{"no-fixerrors", no_argument, 0, '5'},
+	{"seed", required_argument, 0, 's'}
 };
 
-static const char* shortOptions = "vqedo:Hw:h:i:c:IV";
+static const char* shortOptions = "vqedo:Hw:h:i:c:IVs:";
 
 static int encodeImage(const char* in, const char* out);
-static int decodeImage(const char* in, const char* out);
+static int decodeImage(const char* in, const char* out, const char* seed);
 static int printHelp();
 static int printVersion();
 static int infoImage(const char* in);
@@ -67,7 +68,7 @@ int main(int argc, char* argv[]) {
 		M_VERSION
 	} mode = M_UNDEF;
 	char * outputFilename = NULL;
-
+	char * seed = NULL;
 	int optIndex = 0;
 	int c;
 
@@ -105,7 +106,6 @@ int main(int argc, char* argv[]) {
 			break;
 		case 'c':
 			errorCutoff = atof(optarg);
-			errorCutoff *= errorCutoff;
 			break;
 		case 'I':
 			mode = M_INFO;
@@ -127,6 +127,9 @@ int main(int argc, char* argv[]) {
 			break;
 		case '5':
 			fixErrors = false;
+			break;
+		case 's':
+			seed = optarg;
 			break;
 		default:
 		case '?':
@@ -162,7 +165,7 @@ int main(int argc, char* argv[]) {
 			}
 			result = 1;
 		} else {
-			result = decodeImage(argv[optind], outputFilename);
+			result = decodeImage(argv[optind], outputFilename, seed);
 		}
 		break;
 	case M_INFO:
@@ -184,27 +187,16 @@ int main(int argc, char* argv[]) {
 }
 
 int encodeImage(const char* in, const char* out) {
-
 	if (out == NULL) {
 		out = DEFAULT_ENC_FNAME;
 	}
 
-	FILE* inputHandle = fopen(in, "r");
+	gdImagePtr lenna;
 
-	if (inputHandle == NULL) {
-		if (outputError()) {
-			output << "Could not open file " << in << ", dying." << endl;
-		}
-		return 1;
-	}
-
-	gdImagePtr lenna = gdImageCreateFromPng(inputHandle);
-	fclose(inputHandle);
-
-	if (lenna == NULL) {
-		if (outputError()) {
-			output << "Could not load png from " << in << ", dying." << endl;
-		}
+	try {
+		lenna = loadImage(in);
+	} catch (const runtime_error& e) {
+		openError(in, e.what());
 		return 1;
 	}
 
@@ -219,7 +211,7 @@ int encodeImage(const char* in, const char* out) {
 
 	Triangle* cur;
 
-	while((cur = tree.assignOne(errorCutoff)) != NULL) {
+	while((cur = tree.assignOne(errorCutoff*errorCutoff)) != NULL) {
 		if (outputVerbose()) {
 			output << "Triangle #" << cur->getId();
 			output << " assigned - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
@@ -232,9 +224,7 @@ int encodeImage(const char* in, const char* out) {
 	ofstream outStream(out, ios_base::out | ios_base::trunc | ios_base::binary);
 
 	if (!outStream.good()) {
-		if (outputError()) {
-			output << "Could not open file " << out << ", dying." << endl;
-		}
+		openError(out);
 		return 1;
 	}
 
@@ -251,27 +241,50 @@ int encodeImage(const char* in, const char* out) {
 	return 0;
 }
 
-int decodeImage(const char * in, const char * out) {
-
+int decodeImage(const char * in, const char * out, const char* seed) {
 	if (out == NULL) {
 		out = DEFAULT_DEC_FNAME;
 	}
 
 	if (outputStd()) {
-		output << "loading fractal " << in << "..." << endl;
+		output << "Loading fractal " << in << "..." << endl;
 	}
 
 	ifstream inStream(in, ios_base::in | ios_base::binary);
 
 	if (!inStream.good()) {
-		if (outputError()) {
-			output << "Could not open file " << in << ", dying." << endl;
-		}
+		openError(in);
 		return 1;
 	}
 
-	TriangleTree tree = TriangleTree::loadFractal(inStream, width, height);
+	gdImagePtr seedImage = NULL;
 
+	if (seed == NULL) {
+		inStream.seekg (0, ios::end);
+		unsigned long length = inStream.tellg();
+		inStream.seekg (0, ios::beg);
+
+		seedImage = blankCanvas(width, height, length);
+	} else {
+		gdImagePtr temp = NULL;
+		try {
+			temp = loadImage(seed);
+		} catch (const runtime_error& e) {
+			openError(seed, e.what());
+			return 1;
+		}
+
+		seedImage = gdImageCreateTrueColor(width, height);
+
+		gdImageCopyResampled(seedImage, temp, 0, 0, 0, 0,
+		                     gdImageSX(seedImage), gdImageSY(seedImage),
+		                     gdImageSX(temp), gdImageSY(temp));
+		gdFree(temp);
+	}
+
+	TriangleTree tree(DoubleImage(seedImage), inStream);
+
+	gdFree(seedImage);
 	inStream.close();
 
 	if (outputStd()) {
@@ -292,27 +305,25 @@ int decodeImage(const char * in, const char * out) {
 			output << "saving to " << fname << endl;
 			FILE* oimg = fopen(fname.c_str(), "w");
 			if (oimg == NULL) {
-				output << "Could not load " << fname << ", dying." << endl;
+				openError(fname);
 				return 1;
 			}
 			gdImagePng(tree.getImage().getImage(), oimg);
 			fclose(oimg);
 		}
 		if (outputVerbose()) {
-			output << "iteration #" << i <<" done." << endl;
+			output << "Iteration #" << i <<" done." << endl;
 		}
 	}
 
 	if (outputStd()) {
-		output << "rendering done, saving to " << out << "..." << endl;
+		output << "Rendering done, saving to " << out << "..." << endl;
 	}
 
 	FILE* outputImg = fopen(out, "w");
 
 	if (outputImg == NULL) {
-		if (outputError()) {
-			output << "could not open " << out << " for writing." << endl;
-		}
+		openError(out);
 		return 1;
 	}
 
@@ -325,28 +336,46 @@ int decodeImage(const char * in, const char * out) {
 }
 
 int printHelp() {
-	printVersion();
-	if (outputStd()) {
-		output << "This program is used for encoding and decoding triangular fractal images." << endl;
-		output << endl;
-		output << "Usage: fractal [-Hvqed] [-o output] [-w width] [-h height] [-c cutoff] [-i iterations] input" << endl;
-		output << "\t-H, --help           Print this help message." << endl;
-		output << "\t-V, --version        Print version information." << endl;
-		output << "\t-v, --verbose        Print verbose output (twice for debug)." << endl;
-		output << "\t-q, --quiet          Surpress all output." << endl;
-		output << "\t-e, --encode         Encode the input image (png) into a fractal representation." << endl;
-		output << "\t-d, --decode         Decode the input fractal into a raster representation (png)." << endl;
-		output << "\t-o, --output=fname   Output to fname. This could be either a fractal or a raster." << endl;
-		output << "\t-w, --width=num      Set the output width to num." << endl;
-		output << "\t-h, --height=num     Set the output height to num." << endl;
-		output << "\t-i, --iterations=num Set the number of iterations for decoding to num." << endl;
-		output << "\t-c, --cutoff=float   Set the error cutoff to float (rms intensity difference)." << endl;
-		output << "\t-I, --info           Prints information about the input fractal." << endl;
-		output << "\t    --subsample      Subsamples when resizing down." << endl;
-		output << "\t    --supersample    Supersamples when resizing down. Potentially lots of artifacts." << endl;
-		output << "\t    --bothsample     Subsamples and Supersamples. Highest Quality." << endl;
-		output << "\t    --(no-)fixerrors Interpolate (or not) to fix errors. Default is " << (DEFAULT_FIX_ERRORS?"fix":"don't fix") << "." << endl;
+	output << name << " " << version << endl;
+	output << "This program is used for encoding and decoding triangular fractal images." << endl;
+	output << endl;
+	output << "Usage: fractal [OPTIONS] [INPUTFILE]" << endl;
+	output << "General Options:" << endl;
+	output << "  -H, --help           Print this help message." << endl;
+	output << "  -V, --version        Print version information." << endl;
+	output << "  -e, --encode         Encode the input image (png) into a fractal." << endl;
+	output << "  -d, --decode         Decode the input fractal into a raster (png)." << endl;
+	output << "  -I, --info           Prints information about the input fractal." << endl;
+	output << "  -o, --output=fname   Output file." << endl;
+	output << "  -v, --verbose        Print verbose output (twice for debug)." << endl;
+	output << "  -q, --quiet          Surpress all output." << endl;
+	output << endl;
+	output << "Decoding Options:" << endl;
+	output << "  -w, --width=num      Set the output width in pixels. Default: " << DEFAULT_WIDTH << endl;
+	output << "  -h, --height=num     Set the output height in pixels. Default: " << DEFAULT_HEIGHT <<  endl;
+	output << "  -s, --seed=fname     Specify a custom seed image. (resized to w,h)" << endl;
+	output << "  -i, --iterations=num Set the number of iterations for decoding. Default: " << DEFAULT_ITERATIONS << endl;
+	output << "      --subsample      Subsamples - Few Errors";
+	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_SUBSAMPLE) {
+		output << " This is the default.";
 	}
+	output << endl;
+	output << "      --supersample    Supersamples - Lots of errors.";
+	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_SUPERSAMPLE) {
+		output << " This is the default.";
+	}
+	output << endl;
+	output << "      --bothsample     Sub and Supersamples. Highest Quality.";
+	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_BOTHSAMPLE) {
+		output << " This is the default.";
+	}
+	output << endl;
+	output << "      --(no-)fixerrors Interpolate (or not) to fix errors. Default is " << (DEFAULT_FIX_ERRORS?"fix":"don't fix") << "." << endl;
+	output << endl;
+	output << "Encoding Options:" << endl;
+	output << "  -c, --cutoff=float   Set the error cutoff (rms intensity). Default: " << DEFAULT_ERROR_CUTOFF << endl;
+	output << endl;
+	output << "Please report bugs to: <allanlw@gmail.com>" << endl;
 	return 0;
 }
 
@@ -358,13 +387,11 @@ int infoImage(const char* in) {
 	ifstream inStream(in, ios_base::in | ios_base::binary);
 
 	if (!inStream.good()) {
-		if (outputError()) {
-			output << "Could not open file " << in << ", dying." << endl;
-		}
+		openError(in);
 		return 1;
 	}
 
-	TriangleTree tree = TriangleTree::loadFractal(inStream, width, height);
+	TriangleTree tree(inStream);
 
 	inStream.close();
 
@@ -376,8 +403,10 @@ int infoImage(const char* in) {
 }
 
 int printVersion() {
-	if (outputStd()) {
-		output << name << " " << version << endl;
-	}
+	output << name << " " << version << endl;
+	output << "Copyright (C) 2011 Allan Wirth" << endl;
+	output << "License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>" << endl;
+	output << "This is free software: you are free to change and redistribute it." << endl;
+	output << "There is NO WARRANTY, to the extent permitted by law." << endl;
 	return 0;
 }

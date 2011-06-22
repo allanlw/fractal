@@ -24,7 +24,9 @@ private:
 	std::map<const Triangle*, std::vector<Point2D> > pointsCache;
 
 	void mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest);
+	static void copyImage(gdImagePtr* to, gdImagePtr from);
 public:
+	DoubleImage();
 	DoubleImage(gdImagePtr image);
 	DoubleImage(const DoubleImage& img);
 	double snapXToGrid(double x) const;
@@ -47,7 +49,7 @@ public:
 	static std::vector<Point2D> getCorners();
 	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
 	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type);
-	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=true) const;
+	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=false) const;
 	void setImage(gdImagePtr image);
 	gdImagePtr getImage() const;
 	gdImagePtr getEdges() const;

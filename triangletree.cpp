@@ -26,6 +26,9 @@ TriangleTree::TriangleTree(DoubleImage image, istream& in) : image(image), lastI
 	this->unserialize(in);
 }
 
+TriangleTree::TriangleTree(istream& in) : lastId(0) {
+	this->unserialize(in);
+}
 
 TriangleTree::~TriangleTree() {
 	for (std::vector<Triangle*>::iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
@@ -221,23 +224,9 @@ void TriangleTree::eval(DoubleImage::SamplingType sType, bool fixErrors) {
 
 	clearAlpha(newImage);
 	image.setImage(newImage);
+	gdFree(newImage);
 }
 
 const DoubleImage& TriangleTree::getImage() const {
 	return image;
-}
-
-TriangleTree TriangleTree::loadFractal(istream& inStream, int width, int height) {
-
-	inStream.seekg (0, ios::end);
-	unsigned long length = inStream.tellg();
-	inStream.seekg (0, ios::beg);
-
-	gdImagePtr noise = blankCanvas(width, height, length);
-	DoubleImage img(noise);
-	gdFree(noise);
-
-	TriangleTree tree(img, inStream);
-
-	return tree;
 }

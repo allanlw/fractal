@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <random>
+#include <cstdio>
+#include <stdexcept>
 
 #include "constant.hpp"
 #include "output.hpp"
@@ -179,4 +181,32 @@ bool interpolatePixel(gdImagePtr image, int x, int y) {
 		setPixel(image, x, y, total/numColored);
 		return true;
 	}
+}
+
+gdImagePtr loadImage(const char* fName) {
+	if (outputDebug()) {
+		output << "Opening " << fName << " for reading." << endl;
+	}
+	FILE* inputHandle = fopen(fName, "r");
+
+	if (inputHandle == NULL) {
+		throw runtime_error("Coud not open file for reading.");
+	}
+
+	gdImagePtr lenna = gdImageCreateFromPng(inputHandle);
+
+	if (lenna == NULL) {
+		if (outputDebug()) {
+			output << "Could not load png from " << fName << ", trying JPEG." << endl;
+		}
+		fseek(inputHandle, 0, SEEK_SET);
+		lenna = gdImageCreateFromJpeg(inputHandle);
+		if (lenna == NULL) {
+			fclose(inputHandle);
+			throw runtime_error("Could not load PNG or JPEG.");
+		}
+	}
+
+	fclose(inputHandle);
+	return lenna;
 }

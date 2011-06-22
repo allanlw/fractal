@@ -26,6 +26,7 @@ public:
 	explicit TriangleTree(DoubleImage image);
 	TriangleTree(const TriangleTree& tree);
 	TriangleTree(DoubleImage, std::istream& in);
+	explicit TriangleTree(std::istream& in);
 	~TriangleTree();
 	Triangle* getHead() const;
 	const std::deque<Triangle*>& getUnassigned() const;
@@ -43,8 +44,6 @@ public:
 	static void serializeChildren(std::ostream& out, const Triangle* t);
 	void eval(DoubleImage::SamplingType sType, bool fixErrors);
 	const DoubleImage& getImage() const;
-
-	static TriangleTree loadFractal(std::istream& inStream, int width, int height);
 };
 
 #endif

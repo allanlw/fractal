@@ -20,4 +20,6 @@ inline unsigned char boundColor(int c) {
 
 void clearAlpha(gdImagePtr img);
 
+gdImagePtr loadImage(const char* fName);
+
 #endif

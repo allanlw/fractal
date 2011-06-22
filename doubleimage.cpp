@@ -13,28 +13,48 @@
 
 using namespace std;
 
+DoubleImage::DoubleImage() : image(NULL), edges(NULL) {
+}
+
 DoubleImage::DoubleImage(gdImagePtr image)  {
-	this->image = gdImageCreateTrueColor(gdImageSX(image), gdImageSY(image));
-	gdImageCopy(this->image, image, 0, 0, 0, 0, gdImageSX(image), gdImageSY(image));
+	copyImage(&this->image, image);
 	this->edges = NULL;
 }
 
 DoubleImage::DoubleImage(const DoubleImage& img) {
-	this->image = gdImageCreateTrueColor(gdImageSX(img.image), gdImageSY(img.image));
-	gdImageCopy(this->image, img.image, 0, 0, 0, 0, gdImageSX(this->image), gdImageSY(this->image));
-	if (img.edges != NULL) {
-		this->edges = gdImageCreateTrueColor(gdImageSX(img.edges), gdImageSY(img.edges));
-		gdImageCopy(this->edges, img.edges, 0, 0, 0, 0, gdImageSX(this->edges), gdImageSY(this->edges));
-	} else {
-		this->edges = NULL;
-	}
+	copyImage(&this->image, img.image);
+	copyImage(&this->edges, img.edges);
 }
 
 DoubleImage::~DoubleImage() {
-	gdFree(image);
+	if (this->image != NULL) {
+		gdFree(image);
+	}
 	if (this->edges != NULL) {
 		gdFree(edges);
 	}
+}
+
+void DoubleImage::copyImage(gdImagePtr* to, gdImagePtr from) {
+	if (from != NULL) {
+		*to = gdImageCreateTrueColor(gdImageSX(from), gdImageSY(from));
+		gdImageCopy(*to, from, 0, 0, 0, 0, gdImageSX(from), gdImageSY(from));
+	} else {
+		*to = NULL;
+	}
+}
+
+void DoubleImage::setImage(gdImagePtr image) {
+	gdFree(this->image);
+	copyImage(&this->image, image);
+}
+
+gdImagePtr DoubleImage::getImage() const {
+	return image;
+}
+
+gdImagePtr DoubleImage::getEdges() const {
+	return edges;
 }
 
 void DoubleImage::generateEdges() {
@@ -268,18 +288,6 @@ TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const
 		output << " - ratio S:L " << (smaller->getArea() / result.best->getArea())<< endl;
 	}
 	return result;
-}
-
-void DoubleImage::setImage(gdImagePtr image) {
-	this->image = image;
-}
-
-gdImagePtr DoubleImage::getImage() const {
-	return image;
-}
-
-gdImagePtr DoubleImage::getEdges() const {
-	return edges;
 }
 
 void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type) {
