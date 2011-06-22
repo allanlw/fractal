@@ -8,7 +8,7 @@ CXXFLAGS = -Wall -std=c++0x
 FLAGS_SSE = -march=native
 # FLAGS_MATH = -ffast-math
 
-FLAGS_OPT = $(FLAGS_SSE) $(FLAGS_MATH) -O3
+FLAGS_OPT = $(FLAGS_SSE) $(FLAGS_MATH) -O
 FLAGS_PROF = -pg $(FLAGS_OPT)
 FLAGS_DEBUG = -ggdb -Wextra
 FLAGS_OPTDEBUG = $(FLAGS_OPT) -g
