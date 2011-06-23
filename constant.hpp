@@ -1,5 +1,5 @@
-#ifndef CONSTANT_HPP_
-#define CONSTANT_HPP_
+#ifndef _CONSTANT_HPP
+#define _CONSTANT_HPP
 
 #ifndef DEFAULT_ENC_FNAME
 #define DEFAULT_ENC_FNAME "fractal.bin"
@@ -51,6 +51,10 @@
 
 #ifndef DEFAULT_OUTPUT_STREAM
 #define DEFAULT_OUTPUT_STREAM std::cout
+#endif
+
+#ifndef DEFAULT_COLOR_MODE
+#define DEFAULT_COLOR_MODE FractalImage::T_GREYSCALE
 #endif
 
 #ifndef SAME_SIDE_TECHNIQUE

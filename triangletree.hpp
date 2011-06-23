@@ -8,14 +8,17 @@
 #include <cstddef>
 #include <ostream>
 #include <istream>
+#include "gd.h"
 
 #include "constant.hpp"
 #include "triangle.hpp"
 #include "doubleimage.hpp"
+#include "imageutils.hpp"
 
 class TriangleTree {
 private:
-	DoubleImage image;
+	Channel channel;
+	DoubleImage& image;
 	std::deque<Triangle*> unassigned;
 	std::vector<Triangle*> allTriangles;
 	unsigned short lastId;
@@ -23,10 +26,9 @@ private:
 	void subivide(Triangle* t);
 	void unserialize(std::istream& in);
 public:
-	explicit TriangleTree(DoubleImage image);
+	TriangleTree(DoubleImage& image, Channel channel);
 	TriangleTree(const TriangleTree& tree);
-	TriangleTree(DoubleImage, std::istream& in);
-	explicit TriangleTree(std::istream& in);
+	TriangleTree(DoubleImage&, std::istream& in, Channel channel);
 	~TriangleTree();
 	Triangle* getHead() const;
 	const std::deque<Triangle*>& getUnassigned() const;
@@ -42,7 +44,7 @@ public:
 	void serialize(std::ostream& out) const;
 	static void serializeTree(std::ostream& out, const Triangle* t);
 	static void serializeChildren(std::ostream& out, const Triangle* t);
-	void eval(DoubleImage::SamplingType sType, bool fixErrors);
+	void renderTo(gdImagePtr image, DoubleImage::SamplingType sType, bool fixErrors);
 	const DoubleImage& getImage() const;
 };
 

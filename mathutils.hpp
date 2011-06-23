@@ -1,14 +1,6 @@
-/*
- * mathutils.hpp
- *
- *  Created on: May 1, 2011
- *      Author: Allan
- */
+#ifndef _MATHUTILS_HPP
+#define _MATHUTILS_HPP
 
-#ifndef MATHUTILS_HPP_
-#define MATHUTILS_HPP_
-
-#include <list>
 #include <cmath>
 #include <ostream>
 #include <istream>

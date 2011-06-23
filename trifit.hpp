@@ -1,5 +1,5 @@
-#ifndef TRIFIT_HPP_
-#define TRIFIT_HPP_
+#ifndef _TRIFIT_HPP
+#define _TRIFIT_HPP
 
 #include <cstddef>
 #include <string>

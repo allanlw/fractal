@@ -1,5 +1,5 @@
-#ifndef VECTOR2D_HPP_
-#define VECTOR2D_HPP_
+#ifndef _VECTOR2D_HPP
+#define _VECTOR2D_HPP
 
 class Point2D;
 

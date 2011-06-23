@@ -41,12 +41,12 @@ static int _laplace (const unsigned char* data) {
 	return grad;
 }
 
-gdImagePtr edgeDetectSobel(const gdImagePtr image) {
-	return edgeDetect(image, _sobel);
+gdImagePtr edgeDetectSobel(const gdImagePtr image, Channel channel) {
+	return edgeDetect(image, _sobel, channel);
 }
 
-gdImagePtr edgeDetectLaplace(const gdImagePtr image) {
-	return edgeDetect(image, _laplace);
+gdImagePtr edgeDetectLaplace(const gdImagePtr image, Channel channel) {
+	return edgeDetect(image, _laplace, channel);
 }
 
 int wrappedGetPixel(const gdImagePtr img, int x, int y) {
@@ -72,17 +72,53 @@ unsigned char getGrey(const gdImagePtr img, int c) {
 	return (r+g+b)/3;
 }
 
-unsigned char getPixel(const gdImagePtr img, int x, int y, bool check) {
-	const int c = check?wrappedGetPixel(img, x, y):gdImageGetPixel(img,x,y);
-	return getGrey(img, c);
+unsigned char getColor(const gdImagePtr img, int c, Channel channel) {
+	switch(channel) {
+	default:
+	case C_GREY:
+		return getGrey(img, c);
+		break;
+	case C_RED:
+		return gdImageRed(img, c);
+		break;
+	case C_GREEN:
+		return gdImageGreen(img, c);
+		break;
+	case C_BLUE:
+		return gdImageBlue(img, c);
+		break;
+	}
 }
 
-void setPixel(gdImagePtr img, int x, int y, unsigned char grey) {
-	int c = gdTrueColor(grey,grey,grey);
+unsigned char getPixel(const gdImagePtr img, int x, int y, Channel channel, bool check) {
+	const int c = check?wrappedGetPixel(img, x, y):gdImageGetPixel(img,x,y);
+	return getColor(img, c, channel);
+}
+
+void setPixel(gdImagePtr img, int x, int y, unsigned char value, Channel channel, unsigned char alpha) {
+	int c;
+	switch(channel) {
+	default:
+	case C_GREY:
+		c = gdTrueColorAlpha(value, value, value, alpha);
+		break;
+	case C_RED:
+		c = gdImageGetPixel(img, x, y);
+		c = gdTrueColorAlpha(value, gdImageGreen(img, c), gdImageBlue(img, c), alpha);
+		break;
+	case C_GREEN:
+		c = gdImageGetPixel(img, x, y);
+		c = gdTrueColorAlpha(gdImageRed(img, c), value, gdImageBlue(img, c), alpha);
+		break;
+	case C_BLUE:
+		c = gdImageGetPixel(img, x, y);
+		c = gdTrueColorAlpha(gdImageRed(img, c), gdImageGreen(img, c), value, alpha);
+		break;
+	}
 	gdImageSetPixel(img, x, y, c);
 }
 
-gdImagePtr edgeDetect(const gdImagePtr image, int op(const unsigned char*)) {
+gdImagePtr edgeDetect(const gdImagePtr image, int op(const unsigned char*), Channel channel) {
 	gdImagePtr result = gdImageCreateTrueColor(gdImageSX(image), gdImageSY(image));
 
 	int width = gdImageSX(image);
@@ -91,17 +127,17 @@ gdImagePtr edgeDetect(const gdImagePtr image, int op(const unsigned char*)) {
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 			unsigned char pix[9];
-			pix[0] = getPixel(image, x-1, y-1);
-			pix[1] = getPixel(image, x,   y-1);
-			pix[2] = getPixel(image, x+1, y-1);
-			pix[3] = getPixel(image, x-1, y  );
-			pix[4] = getPixel(image, x,   y  );
-			pix[5] = getPixel(image, x+1, y  );
-			pix[6] = getPixel(image, x-1, y+1);
-			pix[7] = getPixel(image, x,   y+1);
-			pix[8] = getPixel(image, x+1, y+1);
+			pix[0] = getPixel(image, x-1, y-1, channel);
+			pix[1] = getPixel(image, x,   y-1, channel);
+			pix[2] = getPixel(image, x+1, y-1, channel);
+			pix[3] = getPixel(image, x-1, y  , channel);
+			pix[4] = getPixel(image, x,   y  , channel);
+			pix[5] = getPixel(image, x+1, y  , channel);
+			pix[6] = getPixel(image, x-1, y+1, channel);
+			pix[7] = getPixel(image, x,   y+1, channel);
+			pix[8] = getPixel(image, x+1, y+1, channel);
 			int c = op(pix);
-			setPixel(result, x, y, boundColor(c));
+			setPixel(result, x, y, boundColor(c), C_GREY);
 		}
 	}
 	return result;
@@ -121,39 +157,40 @@ void clearAlpha(gdImagePtr img) {
 gdImagePtr blankCanvas(int width, int height, unsigned long seed) {
 	std::mt19937 rand;
 
+	rand.seed(seed);
+
 	gdImagePtr result = gdImageCreateTrueColor(width, height);
-//	gdImageFill(result, gdRedMax/2, gdGreenMax/2, gdBlueMax/2);
 
 	for(int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
-			setPixel(result, x, y, (rand() % (gdRedMax/2)) + (gdRedMax/4) );
+			setPixel(result, x, y, (rand() % (gdRedMax/2)) + (gdRedMax/4), C_GREY);
 		}
 	}
 
 	return result;
 }
 
-void interpolateErrors(gdImagePtr image) {
-	if (outputVerbose()) {
+void interpolateErrors(gdImagePtr image, Channel channel) {
+	if (outputDebug()) {
 		output << "Interpolating to correct error pixels..." << endl;
 	}
 	bool success = true;
 	for (int x = 0; x < gdImageSX(image); x++) {
 		for (int y = 0; y < gdImageSY(image); y++) {
-			if (gdImageGetPixel(image, x, y) == ERROR_COLOR) {
-				success = (success && interpolatePixel(image, x, y));
+			if (gdImageAlpha(image, gdImageGetPixel(image, x, y)) == gdAlphaOpaque) {
+				success = (success && interpolatePixel(image, x, y, channel));
 			}
 		}
 	}
 	if (!success) {
-		if (outputVerbose()) {
+		if (outputDebug()) {
 			output << "Interpolation incomplete, interpolating again." << endl;
 		}
-		interpolateErrors(image);
+		interpolateErrors(image, channel);
 	}
 }
 
-bool interpolatePixel(gdImagePtr image, int x, int y) {
+bool interpolatePixel(gdImagePtr image, int x, int y, Channel channel) {
 	const int pix[8] = {
 		wrappedGetPixel(image, x-1, y-1),
 		wrappedGetPixel(image, x,   y-1),
@@ -169,16 +206,16 @@ bool interpolatePixel(gdImagePtr image, int x, int y) {
 	size_t numColored = 0;
 
 	for (size_t i = 0; i < 8; i++) {
-		if (pix[i] != ERROR_COLOR) {
+		if (gdImageAlpha(image, pix[i]) != gdAlphaOpaque) {
 			numColored++;
-			total += getGrey(image, pix[i]);
+			total += getColor(image, pix[i], channel);
 		}
 	}
 
 	if (numColored < PIXELS_FOR_INTERP) {
 		return false;
 	} else {
-		setPixel(image, x, y, total/numColored);
+		setPixel(image, x, y, total/numColored, channel);
 		return true;
 	}
 }
@@ -209,4 +246,22 @@ gdImagePtr loadImage(const char* fName) {
 
 	fclose(inputHandle);
 	return lenna;
+}
+
+string channelToString(Channel channel) {
+	switch(channel) {
+	default:
+	case C_GREY:
+		return "grey";
+		break;
+	case C_RED:
+		return "red";
+		break;
+	case C_BLUE:
+		return "blue";
+		break;
+	case C_GREEN:
+		return "green";
+		break;
+	}
 }

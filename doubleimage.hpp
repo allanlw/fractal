@@ -1,5 +1,5 @@
-#ifndef DOUBLEIMAGE_HPP_
-#define DOUBLEIMAGE_HPP_
+#ifndef _DOUBLEIMAGE_HPP
+#define _DOUBLEIMAGE_HPP
 
 #include <list>
 #include <vector>
@@ -10,6 +10,7 @@
 #include "triangle.hpp"
 #include "trifit.hpp"
 #include "point2d.hpp"
+#include "imageutils.hpp"
 
 class DoubleImage {
 public:
@@ -20,15 +21,19 @@ public:
 	};
 private:
 	gdImagePtr image;
-	gdImagePtr edges;
+	std::map<Channel, gdImagePtr> edges;
 	std::map<const Triangle*, std::vector<Point2D> > pointsCache;
 
-	void mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest);
+	void mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest, Channel channel);
 	static void copyImage(gdImagePtr* to, gdImagePtr from);
 public:
 	DoubleImage();
 	DoubleImage(gdImagePtr image);
 	DoubleImage(const DoubleImage& img);
+	DoubleImage& operator=(const DoubleImage& img);
+	int getWidth() const;
+	int getHeight() const;
+	bool hasEdges() const;
 	double snapXToGrid(double x) const;
 	double snapYToGrid(double y) const;
 	double floorXToGrid(double x) const;
@@ -39,20 +44,20 @@ public:
 	double getYInc() const;
 	const std::vector<Point2D>& getPointsInside(const Triangle* t);
 	std::vector<Point2D> getPointsOnLine(const Point2D& point1, const Point2D& point2) const;
-	double valueAt(double x, double y) const;
-	double valueAt(const Point2D& point) const;
-	double edgeAt(double x, double y) const;
-	double edgeAt(const Point2D& point) const;
+	double valueAt(double x, double y, Channel channel) const;
+	double valueAt(const Point2D& point, Channel channel) const;
+	double edgeAt(double x, double y, Channel channel) const;
+	double edgeAt(const Point2D& point, Channel channel) const;
 	void generateEdges();
-	TriFit getOptimalFit(const Triangle* smaller, const Triangle* larger);
-	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger);
+	TriFit getOptimalFit(const Triangle* smaller, const Triangle* larger, Channel channel);
+	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger, Channel channel);
 	static std::vector<Point2D> getCorners();
-	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end);
-	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type);
-	double getBestDivide(const Point2D& point1, const Point2D& point2, bool high=false) const;
+	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end, Channel channel);
+	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type, Channel channel);
+	double getBestDivide(const Point2D& point1, const Point2D& point2, Channel channel, bool high=false) const;
 	void setImage(gdImagePtr image);
 	gdImagePtr getImage() const;
-	gdImagePtr getEdges() const;
+	const std::map<Channel, gdImagePtr>& getEdges() const;
 	~DoubleImage();
 
 	int doubleToIntX(double x) const;

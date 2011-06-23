@@ -1,5 +1,5 @@
-#ifndef TRIANGLE_HPP_
-#define TRIANGLE_HPP_
+#ifndef _TRIANGLE_HPP
+#define _TRIANGLE_HPP
 
 class Triangle;
 

@@ -1,5 +1,5 @@
-#ifndef OUTPUT_HPP_
-#define OUTPUT_HPP_
+#ifndef _OUTPUT_HPP
+#define _OUTPUT_HPP
 
 #include <string>
 #include <ostream>

@@ -11,6 +11,7 @@
 #include "constant.hpp"
 #include "imageutils.hpp"
 #include "output.hpp"
+#include "fractalimage.hpp"
 
 using namespace std;
 
@@ -24,6 +25,7 @@ static int iterations = DEFAULT_ITERATIONS;
 static double errorCutoff = DEFAULT_ERROR_CUTOFF;
 static DoubleImage::SamplingType sType = DEFAULT_SAMPLING_TYPE;
 static bool fixErrors = DEFAULT_FIX_ERRORS;
+static FractalImage::ImageType colorMode = DEFAULT_COLOR_MODE;
 
 static const char* name = "Fractal Image Compressor";
 
@@ -47,10 +49,12 @@ static const struct option longOptions[] = {
 	{"bothsample", no_argument, 0, '3'},
 	{"fixerrors", no_argument, 0, '4'},
 	{"no-fixerrors", no_argument, 0, '5'},
-	{"seed", required_argument, 0, 's'}
+	{"seed", required_argument, 0, 's'},
+	{"color", no_argument, 0, 'C'},
+	{"greyscale", no_argument, 0, 'G'}
 };
 
-static const char* shortOptions = "vqedo:Hw:h:i:c:IVs:";
+static const char* shortOptions = "vqedo:Hw:h:i:c:IVs:CG";
 
 static int encodeImage(const char* in, const char* out);
 static int decodeImage(const char* in, const char* out, const char* seed);
@@ -131,6 +135,12 @@ int main(int argc, char* argv[]) {
 		case 's':
 			seed = optarg;
 			break;
+		case 'C':
+			colorMode = FractalImage::T_COLOR;
+			break;
+		case 'G':
+			colorMode = FractalImage::T_GREYSCALE;
+			break;
 		default:
 		case '?':
 			return 1;
@@ -201,25 +211,14 @@ int encodeImage(const char* in, const char* out) {
 	}
 
 	DoubleImage img(lenna);
-	TriangleTree tree(img);
-
+	FractalImage fractal(img, colorMode);
 	gdFree(lenna);
 
 	if (outputStd()) {
 		output << in << " loaded, encoding..." << endl;
 	}
 
-	Triangle* cur;
-
-	while((cur = tree.assignOne(errorCutoff*errorCutoff)) != NULL) {
-		if (outputVerbose()) {
-			output << "Triangle #" << cur->getId();
-			output << " assigned - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
-			output << tree.getUnassigned().size() << " unassigned / ";
-			output << tree.getAllTriangles().size() << " total. (";
-			output << (((double)tree.getUnassigned().size())/((double)tree.getAllTriangles().size())*100) << "%)" << endl;
-		}
-	}
+	fractal.encode(errorCutoff*errorCutoff);
 
 	ofstream outStream(out, ios_base::out | ios_base::trunc | ios_base::binary);
 
@@ -229,10 +228,10 @@ int encodeImage(const char* in, const char* out) {
 	}
 
 	if (outputStd()) {
-		output << "Saving fractal (" << tree.getLastId() << " triangles) to " << out << "." << endl;
+		output << "Saving fractal (" << fractal.getSize() << " triangles) to " << out << "." << endl;
 	}
 
-	tree.serialize(outStream);
+	fractal.serialize(outStream);
 	outStream.close();
 
 	if (outputStd()) {
@@ -282,13 +281,15 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		gdFree(temp);
 	}
 
-	TriangleTree tree(DoubleImage(seedImage), inStream);
+	DoubleImage img(seedImage);
+
+	FractalImage fractal(inStream, img);
 
 	gdFree(seedImage);
 	inStream.close();
 
 	if (outputStd()) {
-		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;
+		output << "fractal loaded. (" << fractal.getSize() << " triangles)" << endl;
 
 		output << "rendering fractal..." << endl;
 	}
@@ -297,7 +298,8 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		if (outputVerbose()) {
 			output << "evaulating iteration #" << i << endl;
 		}
-		tree.eval(sType, fixErrors);
+		DoubleImage result(fractal.decode(sType, fixErrors));
+		fractal.setImage(result);
 		if (false) {
 			ostringstream s;
 			s << "e" << i << ".png";
@@ -308,7 +310,7 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 				openError(fname);
 				return 1;
 			}
-			gdImagePng(tree.getImage().getImage(), oimg);
+			gdImagePng(fractal.getImage().getImage(), oimg);
 			fclose(oimg);
 		}
 		if (outputVerbose()) {
@@ -327,8 +329,9 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		return 1;
 	}
 
-	gdImagePng(tree.getImage().getImage(), outputImg);
+	gdImagePng(fractal.getImage().getImage(), outputImg);
 	fclose(outputImg);
+
 	if (outputStd()) {
 		output << "Done." << endl;
 	}
@@ -374,6 +377,16 @@ int printHelp() {
 	output << endl;
 	output << "Encoding Options:" << endl;
 	output << "  -c, --cutoff=float   Set the error cutoff (rms intensity). Default: " << DEFAULT_ERROR_CUTOFF << endl;
+	output << "  -C, --color          Encode in color.";
+	if (DEFAULT_COLOR_MODE == FractalImage::T_COLOR) {
+		output << " This is the default.";
+	}
+	output << endl;
+	output << "  -G, --greyscale      Encode in greyscale.";
+	if (DEFAULT_COLOR_MODE == FractalImage::T_GREYSCALE) {
+		output << " This is the default.";
+	}
+	output << endl;
 	output << endl;
 	output << "Please report bugs to: <allanlw@gmail.com>" << endl;
 	return 0;
@@ -391,12 +404,12 @@ int infoImage(const char* in) {
 		return 1;
 	}
 
-	TriangleTree tree(inStream);
+	FractalImage fractal(inStream, DoubleImage());
 
 	inStream.close();
 
 	if (outputStd()) {
-		output << "fractal loaded. (" << tree.getAllTriangles().size() << " triangles)" << endl;
+		output << "fractal loaded. (" << fractal.getSize() << " triangles)" << endl;
 	}
 
 	return 0;

@@ -1,5 +1,5 @@
-#ifndef AFFINETRANSFORM_HPP_
-#define AFFINETRANSFORM_HPP_
+#ifndef _AFFINETRANSFORM_HPP
+#define _AFFINETRANSFORM_HPP
 
 class AffineTransform;
 

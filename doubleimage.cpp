@@ -1,4 +1,5 @@
 #include "doubleimage.hpp"
+
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -13,26 +14,51 @@
 
 using namespace std;
 
-DoubleImage::DoubleImage() : image(NULL), edges(NULL) {
+DoubleImage::DoubleImage() : image(NULL) {
 }
 
 DoubleImage::DoubleImage(gdImagePtr image)  {
 	copyImage(&this->image, image);
-	this->edges = NULL;
 }
 
 DoubleImage::DoubleImage(const DoubleImage& img) {
-	copyImage(&this->image, img.image);
-	copyImage(&this->edges, img.edges);
+	copyImage(&(this->image), img.image);
+	for(map<Channel, gdImagePtr>::const_iterator it = img.edges.begin(); it != img.edges.end(); it++) {
+		copyImage(&edges[it->first], it->second);
+	}
+}
+
+DoubleImage& DoubleImage::operator=(const DoubleImage& img) {
+	if (this != &img) {
+		copyImage(&(this->image), img.image);
+		for(map<Channel, gdImagePtr>::const_iterator it = img.edges.begin(); it != img.edges.end(); it++) {
+			copyImage(&edges[it->first], it->second);
+		}
+	}
+	return *this;
 }
 
 DoubleImage::~DoubleImage() {
 	if (this->image != NULL) {
 		gdFree(image);
 	}
-	if (this->edges != NULL) {
-		gdFree(edges);
+	for(map<Channel, gdImagePtr>::const_iterator it = edges.begin(); it != edges.end(); it++) {
+		if (it->second != NULL) {
+			gdFree(it->second);
+		}
 	}
+}
+
+int DoubleImage::getWidth() const {
+	return gdImageSX(image);
+}
+
+int DoubleImage::getHeight() const {
+	return gdImageSY(image);
+}
+
+bool DoubleImage::hasEdges() const {
+	return !this->edges.empty();
 }
 
 void DoubleImage::copyImage(gdImagePtr* to, gdImagePtr from) {
@@ -53,15 +79,21 @@ gdImagePtr DoubleImage::getImage() const {
 	return image;
 }
 
-gdImagePtr DoubleImage::getEdges() const {
+const map<Channel, gdImagePtr>& DoubleImage::getEdges() const {
 	return edges;
 }
 
 void DoubleImage::generateEdges() {
 	if (EDGE_DETECT_SOBEL) {
-		edges = edgeDetectSobel(image);
+		edges[C_GREY] = edgeDetectSobel(image, C_GREY);
+		edges[C_RED] = edgeDetectSobel(image, C_RED);
+		edges[C_GREEN] = edgeDetectSobel(image, C_GREEN);
+		edges[C_BLUE] = edgeDetectSobel(image, C_BLUE);
 	} else {
-		edges = edgeDetectLaplace(image);
+		edges[C_GREY] = edgeDetectLaplace(image, C_GREY);
+		edges[C_RED] = edgeDetectLaplace(image, C_RED);
+		edges[C_GREEN] = edgeDetectLaplace(image, C_GREEN);
+		edges[C_BLUE] = edgeDetectLaplace(image, C_BLUE);
 	}
 }
 
@@ -97,33 +129,33 @@ int DoubleImage::doubleToIntY(double y) const {
 	return doubleToInt(y, 0, gdImageSY(image)-1);
 }
 
-double DoubleImage::valueAt(double x, double y) const {
+double DoubleImage::valueAt(double x, double y, Channel channel) const {
 	const int _x = doubleToIntX(x);
 	const int _y = doubleToIntY(y);
 
-	const int val = getPixel(image, _x, _y, false);
+	const int val = getPixel(image, _x, _y, channel, false);
 	return val;
 }
 
-double DoubleImage::edgeAt(double x, double y) const {
+double DoubleImage::edgeAt(double x, double y, Channel channel) const {
 	const int _x = doubleToIntX(x);
 	const int _y = doubleToIntY(y);
 
-	const int val = getPixel(edges, _x, _y, false);
+	const int val = getPixel(edges.find(channel)->second, _x, _y, C_GREY, false);
 	return val;
 }
 
-double DoubleImage::edgeAt(const Point2D& point) const {
-	return edgeAt(point.getX(), point.getY());
+double DoubleImage::edgeAt(const Point2D& point, Channel channel) const {
+	return edgeAt(point.getX(), point.getY(), channel);
 }
 
-double DoubleImage::valueAt(const Point2D& point) const {
-	return valueAt(point.getX(), point.getY());
+double DoubleImage::valueAt(const Point2D& point, Channel channel) const {
+	return valueAt(point.getX(), point.getY(), channel);
 }
 
-TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* larger) {
+TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* larger, Channel channel) {
 
-	map<TriFit::PointMap, vector<double> > allConfigs = getAllConfigurations(smaller, larger);
+	map<TriFit::PointMap, vector<double> > allConfigs = getAllConfigurations(smaller, larger, channel);
 	TriFit best(0, 0, -1, TriFit::P000, larger);
 
 	const TriFit::PointMap tm = TriFit::P000;
@@ -272,14 +304,14 @@ std::vector<Point2D> DoubleImage::getCorners() {
 	return result;
 }
 
-TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end) {
+TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const_iterator start, list<Triangle*>::const_iterator end, Channel channel) {
 	TriFit result(0, 0, -1, TriFit::P000, NULL);
 	const size_t minArea = getPointsInside(smaller).size() * MIN_SEARCH_RATIO;
 	for(; start != end; start++) {
 		if (getPointsInside(*start).size() < minArea) {
 			continue;
 		}
-		TriFit f = getOptimalFit(smaller,*start);
+		TriFit f = getOptimalFit(smaller,*start, channel);
 		if (f.error < result.error || result.error < 0) {
 			result = f;
 		}
@@ -290,7 +322,7 @@ TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const
 	return result;
 }
 
-void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type) {
+void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type, Channel channel) {
 	if (gdImageSX(image) != gdImageSX(to) || gdImageSY(image) != gdImageSY(to)) {
 		throw logic_error("dimensions don't match!!!");
 	}
@@ -303,7 +335,7 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Sampli
 		const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap).getInverse();
 
 		for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
-			mapPoint(to, fit, trans.transform(*it), *it);
+			mapPoint(to, fit, trans.transform(*it), *it, channel);
 		}
 
 		break;
@@ -314,41 +346,39 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Sampli
 		const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap);
 
 		for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
-			mapPoint(to, fit, *it, trans.transform(*it));
+			mapPoint(to, fit, *it, trans.transform(*it), channel);
 		}
 
 		break;
 	}
 	case T_BOTHSAMPLE: {
-		mapPoints(t, fit, to, T_SUPERSAMPLE);
-		mapPoints(t, fit, to, T_SUBSAMPLE);
+		mapPoints(t, fit, to, T_SUPERSAMPLE, channel);
+		mapPoints(t, fit, to, T_SUBSAMPLE, channel);
 		break;
 	}
 	}
 }
 
-void DoubleImage::mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest) {
+void DoubleImage::mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest, Channel channel) {
 	const int d_x = doubleToIntX(dest.getX());
 	const int d_y = doubleToIntY(dest.getY());
 
-	double newVal = (valueAt(source) * fit.saturation) + fit.brightness;
+	double newVal = (valueAt(source, channel) * fit.saturation) + fit.brightness;
 
 	const int d_a = gdImageAlpha(to, gdImageGetPixel(to, d_x, d_y));
 	const int newAlpha = d_a+1;
 
 	if (newAlpha > 1) {
-		const double oldVal = getPixel(to, d_x, d_y, false);
+		const double oldVal = getPixel(to, d_x, d_y, channel, false);
 		newVal = ((oldVal*d_a)+newVal)/(newAlpha);
 	}
 
 	const int newColor = boundColor(round(newVal));
 
-	const int c = gdTrueColorAlpha(newColor, newColor, newColor, (newAlpha>=gdAlphaTransparent)?gdAlphaTransparent:newAlpha);
-
-	gdImageSetPixel(to, d_x, d_y, c);
+	setPixel(to, d_x, d_y, newColor, channel, (newAlpha>=gdAlphaTransparent)?gdAlphaTransparent:newAlpha);
 }
 
-map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger) {
+map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger, Channel channel) {
 	const vector<Point2D>& smallerPoints = getPointsInside(smaller);
 
 	map<TriFit::PointMap, vector<double> > result;
@@ -363,7 +393,7 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 
 		const AffineTransform trans = AffineTransform(*larger, *smaller, m).getInverse();
 		for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
-			v.push_back(valueAt(trans.transform(*it)));
+			v.push_back(valueAt(trans.transform(*it), channel));
 		}
 	}
 
@@ -373,15 +403,15 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 	v.reserve(smallerPoints.size());
 
 	for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
-		v.push_back(valueAt(*it));
+		v.push_back(valueAt(*it, channel));
 	}
 
 	return result;
 }
 
-double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, bool high) const {
+double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, Channel channel, bool high) const {
 
-	if (this->edges == NULL) {
+	if (!this->hasEdges()) {
 		throw logic_error("Edges not generated!");
 	}
 
@@ -399,7 +429,7 @@ double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, b
 	double bestR = -1;
 
 	for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
-		const double val = edgeAt(*it);
+		const double val = edgeAt(*it, channel);
 		if ( ((high)?(bestVal < val):(bestVal > val)) || bestR < 0) {
 			const double rx = (it->getX() - first.getX())/initialXDiff;
 			const double ry = (it->getY() - first.getY())/initialYDiff;

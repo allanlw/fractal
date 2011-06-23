@@ -12,7 +12,7 @@
 
 using namespace std;
 
-TriangleTree::TriangleTree(DoubleImage image) : image(image), lastId(0) {
+TriangleTree::TriangleTree(DoubleImage& image, Channel channel) : channel(channel), image(image), lastId(0) {
 	std::vector<Point2D> corners = image.getCorners();
 	Triangle* head = new Triangle(corners[0], corners[1], corners[2]);
 	head->setNextSibling(new Triangle(corners[0], corners[3], corners[2]));
@@ -22,11 +22,7 @@ TriangleTree::TriangleTree(DoubleImage image) : image(image), lastId(0) {
 	allTriangles.push_back(head->getNextSibling());
 }
 
-TriangleTree::TriangleTree(DoubleImage image, istream& in) : image(image), lastId(0) {
-	this->unserialize(in);
-}
-
-TriangleTree::TriangleTree(istream& in) : lastId(0) {
+TriangleTree::TriangleTree(DoubleImage& image, istream& in, Channel channel) : channel(channel), image(image), lastId(0) {
 	this->unserialize(in);
 }
 
@@ -83,7 +79,7 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 		subdivide(next);
 		return next;
 	} else {
-		TriFit best = image.getBestMatch(next, above.begin(), above.end());
+		TriFit best = image.getBestMatch(next, above.begin(), above.end(), channel);
 		if (outputDebug()) {
 			output << " - Best Error: " << best.error << endl;
 		}
@@ -97,13 +93,13 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 }
 
 void TriangleTree::subdivide(Triangle* t) {
-	if (image.getEdges() == NULL) {
+	if (!image.hasEdges()) {
 		image.generateEdges();
 	}
 	const vector<Point2D>& points = t->getPoints();
-	double r01 = image.getBestDivide(points[0], points[1]);
-	double r02 = image.getBestDivide(points[0], points[2]);
-	double r12 = image.getBestDivide(points[1], points[2]);
+	double r01 = image.getBestDivide(points[0], points[1], channel);
+	double r02 = image.getBestDivide(points[0], points[2], channel);
+	double r12 = image.getBestDivide(points[1], points[2], channel);
 	if (outputDebug()) {
 		output << " - Subdivide Ratios: " << r01 << ", " << r02 << ", " << r12 << endl;
 	}
@@ -202,29 +198,22 @@ void TriangleTree::unserialize(istream& in) {
 	}
 }
 
-void TriangleTree::eval(DoubleImage::SamplingType sType, bool fixErrors) {
-
-	gdImagePtr newImage = gdImageCreateTrueColor(gdImageSX(image.getImage()), gdImageSY(image.getImage()));
-
-	gdImageAlphaBlending(newImage, 0);
-	gdImageSaveAlpha(newImage, 1);
-
-	gdImageFill(newImage, 0, 0, ERROR_COLOR);
-
+void TriangleTree::renderTo(gdImagePtr image, DoubleImage::SamplingType sType, bool fixErrors) {
+	if (outputVerbose()) {
+		output << "Rendering channel " << channelToString(channel) << "..." << endl;
+	}
 	for (vector<Triangle*>::const_iterator it = allTriangles.begin(); it != allTriangles.end(); it++) {
 		if (!(*it)->isTerminal()) {
 			continue;
 		}
-		image.mapPoints(*it, (*it)->getTarget(), newImage, sType);
+		this->image.mapPoints(*it, (*it)->getTarget(), image, sType, channel);
 	}
 
 	if (fixErrors) {
-		interpolateErrors(newImage);
+		interpolateErrors(image, channel);
 	}
 
-	clearAlpha(newImage);
-	image.setImage(newImage);
-	gdFree(newImage);
+	clearAlpha(image);
 }
 
 const DoubleImage& TriangleTree::getImage() const {
