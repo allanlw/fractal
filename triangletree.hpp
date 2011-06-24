@@ -31,6 +31,7 @@ public:
 	TriangleTree(DoubleImage&, std::istream& in, Channel channel);
 	~TriangleTree();
 	Triangle* getHead() const;
+	Channel getChannel() const;
 	const std::deque<Triangle*>& getUnassigned() const;
 	const std::vector<Triangle*>& getAllTriangles() const;
 	Triangle* assignOne(double cutoff);
@@ -44,7 +45,7 @@ public:
 	void serialize(std::ostream& out) const;
 	static void serializeTree(std::ostream& out, const Triangle* t);
 	static void serializeChildren(std::ostream& out, const Triangle* t);
-	void renderTo(gdImagePtr image, DoubleImage::SamplingType sType, bool fixErrors);
+	void renderTo(gdImagePtr image, bool fixErrors);
 	const DoubleImage& getImage() const;
 };
 

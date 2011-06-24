@@ -57,6 +57,14 @@
 #define DEFAULT_COLOR_MODE FractalImage::T_GREYSCALE
 #endif
 
+#ifndef DEFAULT_DIVISION_TYPE
+#define DEFAULT_DIVISION_TYPE DoubleImage::T_LOWENTROPY
+#endif
+
+#ifndef DEFAULT_METRIC
+#define DEFAULT_METRIC DoubleImage::M_RMS
+#endif
+
 #ifndef SAME_SIDE_TECHNIQUE
 #define SAME_SIDE_TECHNIQUE false
 #endif
@@ -86,7 +94,7 @@
 #endif
 
 #ifndef PIXELS_FOR_INTERP
-#define PIXELS_FOR_INTERP 4
+#define PIXELS_FOR_INTERP 3
 #endif
 
 #endif

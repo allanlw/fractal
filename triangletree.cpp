@@ -44,6 +44,10 @@ Triangle* TriangleTree::getHead() const {
 	return allTriangles.front();
 }
 
+Channel TriangleTree::getChannel() const {
+	return channel;
+}
+
 const std::deque<Triangle*>& TriangleTree::getUnassigned() const {
 	return unassigned;
 }
@@ -198,7 +202,7 @@ void TriangleTree::unserialize(istream& in) {
 	}
 }
 
-void TriangleTree::renderTo(gdImagePtr image, DoubleImage::SamplingType sType, bool fixErrors) {
+void TriangleTree::renderTo(gdImagePtr image, bool fixErrors) {
 	if (outputVerbose()) {
 		output << "Rendering channel " << channelToString(channel) << "..." << endl;
 	}
@@ -206,7 +210,7 @@ void TriangleTree::renderTo(gdImagePtr image, DoubleImage::SamplingType sType, b
 		if (!(*it)->isTerminal()) {
 			continue;
 		}
-		this->image.mapPoints(*it, (*it)->getTarget(), image, sType, channel);
+		this->image.mapPoints(*it, (*it)->getTarget(), image, channel);
 	}
 
 	if (fixErrors) {

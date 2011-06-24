@@ -19,20 +19,39 @@ public:
 		T_SUPERSAMPLE,
 		T_BOTHSAMPLE
 	};
+	enum DivisionType {
+		T_HIGHENTROPY,
+		T_LOWENTROPY,
+		T_MIDDLE
+	};
+	enum Metric {
+		M_RMS,
+		M_SUP
+	};
 private:
 	gdImagePtr image;
 	std::map<Channel, gdImagePtr> edges;
 	std::map<const Triangle*, std::vector<Point2D> > pointsCache;
+	SamplingType sType;
+	DivisionType dType;
+	Metric metric;
 
 	void mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest, Channel channel);
 	static void copyImage(gdImagePtr* to, gdImagePtr from);
 public:
 	DoubleImage();
 	DoubleImage(gdImagePtr image);
+	DoubleImage(gdImagePtr image, SamplingType sType, DivisionType dType, Metric metric);
 	DoubleImage(const DoubleImage& img);
 	DoubleImage& operator=(const DoubleImage& img);
 	int getWidth() const;
 	int getHeight() const;
+	Metric getMetric() const;
+	void setMetric(Metric metric);
+	SamplingType getSamplingType() const;
+	void setSamplingType(SamplingType sType);
+	DivisionType getDivisionType() const;
+	void setDivisionType(DivisionType dType);
 	bool hasEdges() const;
 	double snapXToGrid(double x) const;
 	double snapYToGrid(double y) const;
@@ -53,8 +72,8 @@ public:
 	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger, Channel channel);
 	static std::vector<Point2D> getCorners();
 	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end, Channel channel);
-	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type, Channel channel);
-	double getBestDivide(const Point2D& point1, const Point2D& point2, Channel channel, bool high=false) const;
+	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Channel channel);
+	double getBestDivide(const Point2D& point1, const Point2D& point2, Channel channel) const;
 	void setImage(gdImagePtr image);
 	gdImagePtr getImage() const;
 	const std::map<Channel, gdImagePtr>& getEdges() const;

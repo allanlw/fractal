@@ -74,7 +74,7 @@ void FractalImage::serialize(ostream& out) const {
 	}
 }
 
-gdImagePtr FractalImage::decode(DoubleImage::SamplingType sType, bool fixErrors) {
+gdImagePtr FractalImage::decode(bool fixErrors) {
 	gdImagePtr newImage = gdImageCreateTrueColor(image.getWidth(), image.getHeight());
 
 	gdImageAlphaBlending(newImage, 0);
@@ -82,7 +82,7 @@ gdImagePtr FractalImage::decode(DoubleImage::SamplingType sType, bool fixErrors)
 
 	gdImageFill(newImage, 0, 0, ERROR_COLOR);
 	for (std::vector<TriangleTree*>::const_iterator it = channels.begin(); it != channels.end(); it++) {
-		(*it)->renderTo(newImage, sType, fixErrors);
+		(*it)->renderTo(newImage, fixErrors);
 	}
 	return newImage;
 }
@@ -90,7 +90,9 @@ gdImagePtr FractalImage::decode(DoubleImage::SamplingType sType, bool fixErrors)
 void FractalImage::encode(double error) {
 	Triangle* cur;
 	for (vector<TriangleTree*>::size_type i = 0; i < channels.size(); i++) {
-		output << "Assigning channel " << i << endl;
+		if (outputVerbose()) {
+			output << "Assigning channel " << channelToString(channels[i]->getChannel()) << endl;
+		}
 		while((cur = channels[i]->assignOne(error)) != NULL) {
 			if (outputVerbose()) {
 				output << "Triangle #" << cur->getId();
@@ -120,4 +122,8 @@ FractalImage::~FractalImage() {
 	for (vector<TriangleTree*>::iterator it = channels.begin(); it != channels.end(); it++) {
 		delete *it;
 	}
+}
+
+const vector<TriangleTree*>& FractalImage::getChannels() const {
+	return channels;
 }

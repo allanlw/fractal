@@ -28,9 +28,10 @@ public:
 	ImageType getType() const;
 	void serialize(std::ostream& out) const;
 	void encode(double error);
-	gdImagePtr decode(DoubleImage::SamplingType sType, bool fixErrors);
+	gdImagePtr decode(bool fixErrors);
 	void setImage(DoubleImage image);
 	std::vector<Triangle*>::size_type getSize() const;
+	const std::vector<TriangleTree*>& getChannels() const;
 	~FractalImage();
 };
 

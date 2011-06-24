@@ -7,7 +7,6 @@
 #include "getopt.h"
 
 #include "doubleimage.hpp"
-#include "triangletree.hpp"
 #include "constant.hpp"
 #include "imageutils.hpp"
 #include "output.hpp"
@@ -26,10 +25,12 @@ static double errorCutoff = DEFAULT_ERROR_CUTOFF;
 static DoubleImage::SamplingType sType = DEFAULT_SAMPLING_TYPE;
 static bool fixErrors = DEFAULT_FIX_ERRORS;
 static FractalImage::ImageType colorMode = DEFAULT_COLOR_MODE;
+static DoubleImage::DivisionType dType = DEFAULT_DIVISION_TYPE;
+static DoubleImage::Metric metric = DEFAULT_METRIC;
 
 static const char* name = "Fractal Image Compressor";
 
-static const char* version = "0.1a";
+static const char* version = "0.1";
 
 static const struct option longOptions[] = {
 	{"verbose", no_argument, 0, 'v'},
@@ -44,14 +45,14 @@ static const struct option longOptions[] = {
 	{"cutoff", required_argument, 0, 'c'},
 	{"info", no_argument, 0, 'I'},
 	{"version", no_argument, 0, 'V'},
-	{"subsample", no_argument, 0, '1'},
-	{"supersample", no_argument, 0, '2'},
-	{"bothsample", no_argument, 0, '3'},
+	{"sample", required_argument, 0, '1'},
 	{"fixerrors", no_argument, 0, '4'},
 	{"no-fixerrors", no_argument, 0, '5'},
 	{"seed", required_argument, 0, 's'},
 	{"color", no_argument, 0, 'C'},
-	{"greyscale", no_argument, 0, 'G'}
+	{"greyscale", no_argument, 0, 'G'},
+	{"split", required_argument, 0, '2'},
+	{"metric", required_argument, 0, '3'}
 };
 
 static const char* shortOptions = "vqedo:Hw:h:i:c:IVs:CG";
@@ -117,15 +118,49 @@ int main(int argc, char* argv[]) {
 		case 'V':
 			mode = M_VERSION;
 			break;
-		case '1':
-			sType = DoubleImage::T_SUBSAMPLE;
+		case '1': {
+			string arg(optarg);
+			if (arg == "sub") {
+				sType = DoubleImage::T_SUBSAMPLE;
+			} else if (arg == "super") {
+				sType = DoubleImage::T_SUPERSAMPLE;
+			} else if (arg == "both") {
+				sType = DoubleImage::T_BOTHSAMPLE;
+			} else {
+				if (outputError()) {
+					output << "Invalid sample type." << endl;
+				}
+			}
 			break;
-		case '2':
-			sType = DoubleImage::T_SUPERSAMPLE;
+		}
+		case '2': {
+			string arg(optarg);
+			if (arg == "high") {
+				dType = DoubleImage::T_HIGHENTROPY;
+			} else if (arg == "low") {
+				dType = DoubleImage::T_LOWENTROPY;
+			} else if (arg == "mid") {
+				dType = DoubleImage::T_MIDDLE;
+			} else {
+				if (outputError()) {
+					output << "Invalid split value." << endl;
+				}
+			}
 			break;
-		case '3':
-			sType = DoubleImage::T_BOTHSAMPLE;
+		}
+		case '3': {
+			string arg(optarg);
+			if (arg == "rms") {
+				metric = DoubleImage::M_RMS;
+			} else if (arg == "sup") {
+				metric = DoubleImage::M_SUP;
+			} else {
+				if (outputError()) {
+					output << "Invalid metric." << endl;
+				}
+			}
 			break;
+		}
 		case '4':
 			fixErrors = true;
 			break;
@@ -151,6 +186,7 @@ int main(int argc, char* argv[]) {
 	int result = 0;
 
 	switch (mode) {
+	default:
 	case M_UNDEF:
 		if (outputError()) {
 			output << "No operation specified. Printing Help." << endl;
@@ -210,7 +246,7 @@ int encodeImage(const char* in, const char* out) {
 		return 1;
 	}
 
-	DoubleImage img(lenna);
+	DoubleImage img(lenna, sType, dType, metric);
 	FractalImage fractal(img, colorMode);
 	gdFree(lenna);
 
@@ -218,7 +254,7 @@ int encodeImage(const char* in, const char* out) {
 		output << in << " loaded, encoding..." << endl;
 	}
 
-	fractal.encode(errorCutoff*errorCutoff);
+	fractal.encode(errorCutoff);
 
 	ofstream outStream(out, ios_base::out | ios_base::trunc | ios_base::binary);
 
@@ -281,7 +317,7 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		gdFree(temp);
 	}
 
-	DoubleImage img(seedImage);
+	DoubleImage img(seedImage, sType, dType, metric);
 
 	FractalImage fractal(inStream, img);
 
@@ -294,11 +330,11 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		output << "rendering fractal..." << endl;
 	}
 
-	for (int i = 0; i < iterations; i++) {
+	for (int i = 1; i <= iterations; i++) {
 		if (outputVerbose()) {
 			output << "evaulating iteration #" << i << endl;
 		}
-		DoubleImage result(fractal.decode(sType, fixErrors));
+		DoubleImage result(fractal.decode(fixErrors), sType, dType, metric);
 		fractal.setImage(result);
 		if (false) {
 			ostringstream s;
@@ -339,6 +375,8 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 }
 
 int printHelp() {
+	const string defaultMsg = " This is the default.";
+
 	output << name << " " << version << endl;
 	output << "This program is used for encoding and decoding triangular fractal images." << endl;
 	output << endl;
@@ -352,39 +390,67 @@ int printHelp() {
 	output << "  -o, --output=fname   Output file." << endl;
 	output << "  -v, --verbose        Print verbose output (twice for debug)." << endl;
 	output << "  -q, --quiet          Surpress all output." << endl;
+	output << "      --sample=type    Sets sampling mode. Options are:" << endl;
+	output << "                         \"sub\" - Subsampling, few errors.";
+	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_SUBSAMPLE) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"super\" - Supersampling, lots of errors.";
+	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_SUPERSAMPLE) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"both\" - sub and supersamples. Highest Quality.";
+	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_BOTHSAMPLE) {
+		output << defaultMsg;
+	}
+	output << endl;
 	output << endl;
 	output << "Decoding Options:" << endl;
 	output << "  -w, --width=num      Set the output width in pixels. Default: " << DEFAULT_WIDTH << endl;
 	output << "  -h, --height=num     Set the output height in pixels. Default: " << DEFAULT_HEIGHT <<  endl;
 	output << "  -s, --seed=fname     Specify a custom seed image. (resized to w,h)" << endl;
 	output << "  -i, --iterations=num Set the number of iterations for decoding. Default: " << DEFAULT_ITERATIONS << endl;
-	output << "      --subsample      Subsamples - Few Errors";
-	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_SUBSAMPLE) {
-		output << " This is the default.";
-	}
-	output << endl;
-	output << "      --supersample    Supersamples - Lots of errors.";
-	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_SUPERSAMPLE) {
-		output << " This is the default.";
-	}
-	output << endl;
-	output << "      --bothsample     Sub and Supersamples. Highest Quality.";
-	if (DEFAULT_SAMPLING_TYPE == DoubleImage::T_BOTHSAMPLE) {
-		output << " This is the default.";
-	}
-	output << endl;
 	output << "      --(no-)fixerrors Interpolate (or not) to fix errors. Default is " << (DEFAULT_FIX_ERRORS?"fix":"don't fix") << "." << endl;
 	output << endl;
 	output << "Encoding Options:" << endl;
 	output << "  -c, --cutoff=float   Set the error cutoff (rms intensity). Default: " << DEFAULT_ERROR_CUTOFF << endl;
-	output << "  -C, --color          Encode in color.";
+	output << "  -C, --color          Encode in RGB colorspace.";
 	if (DEFAULT_COLOR_MODE == FractalImage::T_COLOR) {
-		output << " This is the default.";
+		output << defaultMsg;
 	}
 	output << endl;
 	output << "  -G, --greyscale      Encode in greyscale.";
 	if (DEFAULT_COLOR_MODE == FractalImage::T_GREYSCALE) {
-		output << " This is the default.";
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "      --split=type     Sets the triangle splitting type. Options are:" << endl;
+	output << "                         \"high\" - split on high edge entropy.";
+	if (DEFAULT_DIVISION_TYPE == DoubleImage::T_HIGHENTROPY) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"low\" - split on least image edge entropy.";
+	if (DEFAULT_DIVISION_TYPE == DoubleImage::T_LOWENTROPY) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"mid\" - split in the middle.";
+	if (DEFAULT_DIVISION_TYPE == DoubleImage::T_MIDDLE) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "      --metric=func    Sets the metric function. Options are:" << endl;
+	output << "                         \"rms\" - Root Mean Square metric.";
+	if (DEFAULT_METRIC == DoubleImage::M_RMS) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"sup\" - Supremum metric.";
+	if (DEFAULT_METRIC == DoubleImage::M_SUP) {
+		output << defaultMsg;
 	}
 	output << endl;
 	output << endl;
@@ -408,8 +474,12 @@ int infoImage(const char* in) {
 
 	inStream.close();
 
-	if (outputStd()) {
-		output << "fractal loaded. (" << fractal.getSize() << " triangles)" << endl;
+	output << "fractal loaded. (" << fractal.getSize() << " triangles)" << endl;
+
+	output << "Num Channels: " << fractal.getChannels().size() << endl;
+	for (vector<TriangleTree*>::const_iterator it = fractal.getChannels().begin(); it != fractal.getChannels().end(); it++) {
+		output << "Channel " << channelToString((*it)->getChannel()) << ":" << endl;
+		output << "    Num Triangles: " << (*it)->getAllTriangles().size() << endl;
 	}
 
 	return 0;

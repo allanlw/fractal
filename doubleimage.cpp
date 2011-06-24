@@ -14,18 +14,23 @@
 
 using namespace std;
 
-DoubleImage::DoubleImage() : image(NULL) {
+DoubleImage::DoubleImage() : image(NULL), sType(DEFAULT_SAMPLING_TYPE), dType(DEFAULT_DIVISION_TYPE), metric(DEFAULT_METRIC) {
 }
 
-DoubleImage::DoubleImage(gdImagePtr image)  {
+DoubleImage::DoubleImage(gdImagePtr image) : sType(DEFAULT_SAMPLING_TYPE), dType(DEFAULT_DIVISION_TYPE), metric(DEFAULT_METRIC) {
 	copyImage(&this->image, image);
 }
 
-DoubleImage::DoubleImage(const DoubleImage& img) {
+DoubleImage::DoubleImage(const DoubleImage& img) : sType(img.sType), dType(img.dType), metric(img.metric) {
 	copyImage(&(this->image), img.image);
 	for(map<Channel, gdImagePtr>::const_iterator it = img.edges.begin(); it != img.edges.end(); it++) {
 		copyImage(&edges[it->first], it->second);
 	}
+}
+
+DoubleImage::DoubleImage(gdImagePtr image, SamplingType sType, DivisionType dType, Metric metric) :
+	sType(sType), dType(dType), metric(metric) {
+	copyImage(&this->image, image);
 }
 
 DoubleImage& DoubleImage::operator=(const DoubleImage& img) {
@@ -34,6 +39,9 @@ DoubleImage& DoubleImage::operator=(const DoubleImage& img) {
 		for(map<Channel, gdImagePtr>::const_iterator it = img.edges.begin(); it != img.edges.end(); it++) {
 			copyImage(&edges[it->first], it->second);
 		}
+		this->sType = img.sType;
+		this->dType = img.dType;
+		this->metric = img.metric;
 	}
 	return *this;
 }
@@ -55,6 +63,30 @@ int DoubleImage::getWidth() const {
 
 int DoubleImage::getHeight() const {
 	return gdImageSY(image);
+}
+
+DoubleImage::Metric DoubleImage::getMetric() const {
+	return metric;
+}
+
+void DoubleImage::setMetric(DoubleImage::Metric metric) {
+	this->metric = metric;
+}
+
+DoubleImage::SamplingType DoubleImage::getSamplingType() const {
+	return sType;
+}
+
+void DoubleImage::setSamplingType(DoubleImage::SamplingType sType) {
+	this->sType = sType;
+}
+
+DoubleImage::DivisionType DoubleImage::getDivisionType() const {
+	return dType;
+}
+
+void DoubleImage::setDivisionType(DoubleImage::DivisionType dType) {
+	this->dType = dType;
 }
 
 bool DoubleImage::hasEdges() const {
@@ -160,51 +192,76 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 
 	const TriFit::PointMap tm = TriFit::P000;
 
-	const vector<double>& smallerPoints = allConfigs[tm];
-
-	double rangeSum = sum(smallerPoints.begin(), smallerPoints.end());
-	double rangeSquaresSum = sumSquares(smallerPoints.begin(), smallerPoints.end());
-	double n = smallerPoints.size();
+	const vector<double>& largerPoints = allConfigs[tm];
 
 	for (map<TriFit::PointMap, vector<double> >::const_iterator it = allConfigs.begin(); it != allConfigs.end(); it++) {
 		if (it->first == TriFit::P000) {
 			continue;
 		}
-		const vector<double>& largerPoints = it->second;
+		const vector<double>& smallerPoints = it->second;
 		double domainSum = sum(largerPoints.begin(), largerPoints.end());
 		double domainSquaresSum = sumSquares(largerPoints.begin(), largerPoints.end());
 		double productSum = dotProduct(largerPoints.begin(), largerPoints.end(),
 		                               smallerPoints.begin(), smallerPoints.end());
 
+		double rangeSum = sum(smallerPoints.begin(), smallerPoints.end());
+		double rangeSquaresSum = sumSquares(smallerPoints.begin(), smallerPoints.end());
+		double n = smallerPoints.size();
+
 		double denom = ((n * n * domainSquaresSum) - (domainSum * domainSum));
 
 		double s;
 		double o;
-//		if (doublesEqual(denom, 0.0)) {
-//			s = 0;
-//			o = rangeSum / (n*n);
-//		} else {
+		if (doublesEqual(denom, 0.0)) {
+			s = 0;
+			o = rangeSum / (n);
+		} else {
 			s = ((n * n * productSum) - (domainSum * rangeSum)) / denom;
 
-/*			if (s > 1) {
+			if (s > 1) {
 				s = 1;
 			} else if (s < 0) {
 				s = 0;
 			}
-*/
-//			o = (rangeSum - (s * domainSum)) / (n * n);
-//			o = ((domainSum * domainSum) - (rangeSum * rangeSum))/ denom;
-			o = (rangeSum - (s*domainSum)) / n;
-//		}
 
-		double r = ((rangeSquaresSum + (s * ((s * domainSquaresSum) - (2.0 *
+			o = (rangeSum - (s*domainSum)) / n;
+
+			if (o < -gdRedMax) {
+				o = -gdRedMax;
+			} else if (o > gdRedMax) {
+				o = gdRedMax;
+			}
+		}
+
+/*		double r = ((rangeSquaresSum + (s * ((s * domainSquaresSum) - (2.0 *
 				productSum) + (2.0 * o * domainSum))) + (o * ((o * n
 				* n) - (2.0 * rangeSum))))) / n;
+*/
 
-/*
+
+//		s^2a^2 + soa -sab + osa + o^2 - ob - sab - bo + b^2
+//		s*(sa^2 + 2oa - 2ab) + o(o - 2b) + b^2
+
+
 		double r = 0;
+		switch(metric) {
+		default:
+		case M_RMS:
+			r = sqrt((s*(s*domainSquaresSum + 2*o*domainSum - 2*productSum) + o*(o*n - 2*rangeSum) + rangeSquaresSum)/n);
+			break;
+		case M_SUP:
+			for(size_t j = 0; j < allConfigs[tm].size(); j++) {
+				double t = (s*smallerPoints[j]+o - largerPoints[j]);
+				if (t > r) {
+					r = t;
+				}
+			}
+			break;
+		}
+/*		double r = 0;
+
 		for (size_t j = 0; j < allConfigs[tm].size(); j ++) {
-			double t = (s * allConfigs[m][j] + o - allConfigs[tm][j]);
+			double t = (s * smallerPoints[j] + o - largerPoints[j]);
 			r += t * t;
 		}
 		r /= n;
@@ -322,12 +379,13 @@ TriFit DoubleImage::getBestMatch(const Triangle* smaller, list<Triangle*>::const
 	return result;
 }
 
-void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, SamplingType type, Channel channel) {
+void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Channel channel) {
 	if (gdImageSX(image) != gdImageSX(to) || gdImageSY(image) != gdImageSY(to)) {
 		throw logic_error("dimensions don't match!!!");
 	}
 
-	switch(type) {
+	switch(sType) {
+	case T_BOTHSAMPLE:
 	case T_SUBSAMPLE: {
 		const vector<Point2D>& points = getPointsInside(t);
 
@@ -337,8 +395,9 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Sampli
 		for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
 			mapPoint(to, fit, trans.transform(*it), *it, channel);
 		}
-
-		break;
+		if (sType != T_BOTHSAMPLE) {
+			break;
+		}
 	}
 	case T_SUPERSAMPLE: {
 		const vector<Point2D>& points = getPointsInside(fit.best);
@@ -349,11 +408,6 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Sampli
 			mapPoint(to, fit, *it, trans.transform(*it), channel);
 		}
 
-		break;
-	}
-	case T_BOTHSAMPLE: {
-		mapPoints(t, fit, to, T_SUPERSAMPLE, channel);
-		mapPoints(t, fit, to, T_SUBSAMPLE, channel);
 		break;
 	}
 	}
@@ -378,10 +432,32 @@ void DoubleImage::mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& sour
 	setPixel(to, d_x, d_y, newColor, channel, (newAlpha>=gdAlphaTransparent)?gdAlphaTransparent:newAlpha);
 }
 
+// result[P000] is the DOMAIN e.g. the larger triangle
 map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger, Channel channel) {
-	const vector<Point2D>& smallerPoints = getPointsInside(smaller);
-
 	map<TriFit::PointMap, vector<double> > result;
+
+	vector<Point2D> largerPoints;
+
+	switch (sType) {
+	case T_BOTHSAMPLE:
+	case T_SUPERSAMPLE:
+		largerPoints = getPointsInside(larger);
+		if (sType != T_BOTHSAMPLE) {
+			break;
+		}
+	case T_SUBSAMPLE: {
+		const vector<Point2D>& smallerPoints = getPointsInside(smaller);
+
+		for (char i = 0; i < TriFit::NUM_MAPS; i++) {
+			const TriFit::PointMap m = TriFit::pointMapFromInt(i);
+			const AffineTransform trans = AffineTransform(*larger, *smaller, m).getInverse();
+			for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
+				largerPoints.push_back(trans.transform(*it));
+			}
+		}
+		break;
+	}
+	}
 
 	for (char i = 0; i < TriFit::NUM_MAPS; i++) {
 		const TriFit::PointMap m = TriFit::pointMapFromInt(i);
@@ -389,10 +465,10 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 		result[m] = vector<double>(0);
 		vector<double>& v = result[m];
 
-		v.reserve(smallerPoints.size());
+		v.reserve(largerPoints.size());
 
-		const AffineTransform trans = AffineTransform(*larger, *smaller, m).getInverse();
-		for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
+		const AffineTransform trans = AffineTransform(*larger, *smaller, m);
+		for (vector<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
 			v.push_back(valueAt(trans.transform(*it), channel));
 		}
 	}
@@ -400,16 +476,22 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 	result[TriFit::P000] = vector<double>(0);
 	vector<double>& v = result[TriFit::P000];
 
-	v.reserve(smallerPoints.size());
+	v.reserve(largerPoints.size());
 
-	for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
+	for (vector<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
 		v.push_back(valueAt(*it, channel));
 	}
 
 	return result;
 }
 
-double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, Channel channel, bool high) const {
+double DoubleImage::getBestDivide(const Point2D& first, const Point2D& second, Channel channel) const {
+
+	if (dType == T_MIDDLE) {
+		return .5;
+	}
+
+	bool high = (dType == T_HIGHENTROPY);
 
 	if (!this->hasEdges()) {
 		throw logic_error("Edges not generated!");
