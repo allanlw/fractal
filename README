@@ -1,0 +1,98 @@
+Fractal Image Compressor v0.1
+(c) 2011 Allan Wirth <allanlw@gmail.com>
+Licensed under the GPLv3 (see COPYING)
+
+This program is a Fractal Image Compression program written in C++ that uses
+triangular regions of the image for encoding.
+
+== Compiling: ==
+
+Compiling this program requires gd2 development libraries (libgd2-dev on
+debian) and a c++ compilier (more likely than not g++). There is one part of
+the code (in the imageutils.cpp source file) that optionally uses the
+mersenne twister included in the <random> header from C++ Technical Report 1
+if the __GXX_EXPERIMENTAL_CXX0X__ macro is set. Otherwise it will use the
+standard srand() and rand() functions from the standard c library which may
+not be determinalistic (honestly I'm not sure) and which means that the noise
+that is generated when decoding fractals as the base image will not be the
+same every time. Either way it is seeded with the file size of the fractal.
+If you do not have access to the TR1 <random> header and desire for your
+decoded images to be bit-consistent I would recommend using the --seed flag to
+specify a custom seed image.
+
+The only command required to compile is `make` or `make all` or `make fractal`.
+No facilities are provided for autoconfiguration or installation because I
+figure no one wants those with a silly program like this anyways.
+
+== Usage: ==
+
+For an extensive list of options use the --help or -H switches on the
+executable.
+
+In essence usage of this program involves first generating fractal binaries by
+encoding bitmap images. There are a multitude of options that specify the
+exact algorithm that the encoder uses but in essence it makes attempts to
+portions of the image that are similar to other, larger, portions of the image.
+
+Decoding reads in the serialized tree of triangles and then maps the points of
+some initial image onto points of a new image based on the transforms defined
+by the tree. By repeating this decoding process the resulting image will
+approach a good approximation of the original.
+
+The program only knows how to read .png and .jpg files and I would suggest
+sticking to the png files for simplicity's sake.
+
+For color images it encodes and decodes each channel (RGB) seperately as
+greyscale images.
+
+== Tips: ==
+
+When encoding I have found that the best set of options to use are:
+
+	--error=rms --split=high --edges=laplace --sample=sub
+
+This encodes fairly fast and fairly accurately. `--sample=both` has the
+potential to work better but will also be quite a bit slower.
+
+As for edge algorithms I have found that `--edges=laplace` does not work well
+with `--split=low`, but that `--edges=sobel` works ok with either
+`--split=high` or `--split=low`. In general I think Laplace is a better filter
+for this application.
+
+The `--error=sup` metric is silly and really isn't useful. The `--split=middle`
+and the `--subdivide=center` options are also silly because it is entirely
+naive.
+
+when it comes to decoding I find that `--sample=super` causes a lot of errors
+(try running with --no-fixerrors with a greyscale image). For some reason I
+cannot figure out `--sample=sub` causes a lot of noise. I have found that
+`--sample=both` is probably the best option when it comes to decoding and is
+fairly smooth.
+
+Of course the width and the height are independent of the aspect ratio at which
+the image was originally encoded. Take care to decode at the same ratio
+unless you want funky images.
+
+== Notes: ==
+
+This program could very well not qualify as a 'compression' program in the
+strictest sense in that the input files are quite often smaller than the output
+files. This is ofcourse because the input files can be quite highly compressed
+to begin with and because the binary file format the the program uses to store
+the fractals in is fairly un-compact. This can be partially remedied by using
+a deflate compression on the binary files which is what I plan to do somewhere
+further down the line.
+
+When it comes to the .bin files that the program produces they are fairly crude
+barely platform independent raw serializations of the internal data structure
+and do not feature a rendundency check. This, too, has the potential to be
+changed sometime in the future.
+
+Finally currently the program is entirely single-threaded which is horribly
+inefficient for a program that could operate almost entirely in parallel
+(especially with colored images!). I plan to add posix thread support sometime
+later as well.
+
+I hope you take a look at the source code and/or the algorithm behind this
+program. If you've found any of this intersting and/or useful at all I would
+appreciate an email at <allanlw@gmail.com>. Thank you!

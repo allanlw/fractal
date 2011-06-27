@@ -1,7 +1,6 @@
 Things that need to be implimented:
 
  * Delicious zlib compression.
+ * Posix threads.
+ * CRC in fractals (maybe offload to zlib)
  * README files and other useful documentation.
-
-for the readme:
- laplace better for high, sobel better for low?
