@@ -1,4 +1,4 @@
-#include "triangletree.hpp"
+#include "triangletree.h"
 
 #include <iostream>
 #include <sstream>
@@ -6,10 +6,10 @@
 #include "gd.h"
 #include <stdexcept>
 
-#include "mathutils.hpp"
-#include "ioutils.hpp"
-#include "imageutils.hpp"
-#include "output.hpp"
+#include "mathutils.h"
+#include "ioutils.h"
+#include "imageutils.h"
+#include "output.h"
 
 using namespace std;
 

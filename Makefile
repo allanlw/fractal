@@ -1,51 +1,30 @@
 LDFLAGS = -lm -lgd
-TESTLDFLAGS = -lcppunit
-CXXFLAGS = -Wall -std=c++0x
+STDFLAGS = -Wall -std=c++0x
 
 # -msse2 does NOT inline calls to cos,tan, etc. is this bad?
 
-# FLAGS_SSE = -msse -msse2 -mfpmath=sse
-FLAGS_SSE = -march=native
+# FLAGS_ARCH = -msse -msse2 -mfpmath=sse
+FLAGS_ARCH = -march=native
 # FLAGS_MATH = -ffast-math
+# FLAGS_DEBUG = -ggdb -Wextra
+# FLAGS_PROF = -pg
 
-FLAGS_OPT = $(FLAGS_SSE) $(FLAGS_MATH) -O
-FLAGS_PROF = -pg $(FLAGS_OPT)
-FLAGS_DEBUG = -ggdb -Wextra
-FLAGS_OPTDEBUG = $(FLAGS_OPT) -g
+CXXFLAGS = $(FLAGS_ARCH) $(FLAGS_MATH) -O $(STDFLAGS) $(FLAGS_DEBUG) $(FLAGS_PROF)
 
-TESTSOURCES = $(wildcard *test.cpp)
-TESTHEADERS = $(wildcard *test.hpp) $(wildcard *test.h)
+CPPSOURCES = $(wildcard *.cpp)
+CPPHEADERS = $(wildcard *.h)
 
-CPPSOURCES = $(filter-out $(TESTSOURCES), $(wildcard *.cpp))
-CPPHEADERS = $(filter-out $(TESTHEADERS), $(wildcard *.h) $(wildcard *.hpp))
-
-FRACTALDEPS = $(CPPSOURCES) $(CPPHEADERS)
+OBJS = $(patsubst %.cpp, %.o, $(CPPSOURCES))
 
 CXX = g++
 
-TARGET = fractal
+all: fractal
 
-all: fractal-opt
+%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) $+
 
-opt: fractal-opt
+fractal: $(OBJS) $(CPPHEADERS)
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) -o fractal $(OBJS)
 
-debug: fractal-debug
-
-prof: fractal-prof
-
-test: $(TESTSOURCES) $(TESTHEADERS) $(CPPSOURCES) $(CPPHEADERS)
-	$(CXX) $(LDFLAGS) $(TESTLDFLAGS) $(CXXFLAGS) $(FLAGS_DEBUG) -o test $(TESTSOURCES) $(filter-out main.cpp, $(CPPSOURCES))
-
-opt-debug: fractal-opt-debug
-
-fractal-opt: $(FRACTALDEPS)
-	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(FLAGS_OPT) -o $(TARGET) $(CPPSOURCES)
-
-fractal-debug: $(FRACTALDEPS)
-	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(FLAGS_DEBUG) -o $(TARGET) $(CPPSOURCES)
-
-fractal-prof: $(FRACTALDEPS)
-	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(FLAGS_PROF) -o $(TARGET) $(CPPSOURCES)
-
-fractal-opt-debug: $(FRACTALDEPS)
-	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(FLAGS_OPTDEBUG) -o $(TARGET) $(CPPSOURCES)
+clean:
+	rm -f fractal $(OBJS)

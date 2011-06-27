@@ -2,8 +2,8 @@
 #include <cmath>
 #include <sstream>
 
-#include "affinetransform.hpp"
-#include "mathutils.hpp"
+#include "affinetransform.h"
+#include "mathutils.h"
 
 using namespace std;
 

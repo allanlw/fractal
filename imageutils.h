@@ -1,5 +1,5 @@
-#ifndef _IMAGEUTILS_HPP
-#define _IMAGEUTILS_HPP
+#ifndef _IMAGEUTILS_H
+#define _IMAGEUTILS_H
 
 #include "gd.h"
 #include <string>

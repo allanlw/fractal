@@ -2,9 +2,9 @@
 #include <sstream>
 #include <iostream>
 
-#include "rectangle.hpp"
-#include "point2d.hpp"
-#include "mathutils.hpp"
+#include "rectangle.h"
+#include "point2d.h"
+#include "mathutils.h"
 
 Rectangle::Rectangle(const double x, const double y, const double w,
 		const double h) :

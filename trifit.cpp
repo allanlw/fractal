@@ -1,9 +1,9 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "trifit.hpp"
-#include "mathutils.hpp"
-#include "ioutils.hpp"
+#include "trifit.h"
+#include "mathutils.h"
+#include "ioutils.h"
 
 using namespace std;
 

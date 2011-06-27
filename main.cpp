@@ -6,12 +6,12 @@
 #include "gd.h"
 #include "getopt.h"
 
-#include "doubleimage.hpp"
-#include "constant.hpp"
-#include "imageutils.hpp"
-#include "output.hpp"
-#include "fractalimage.hpp"
-#include "ioutils.hpp"
+#include "doubleimage.h"
+#include "constant.h"
+#include "imageutils.h"
+#include "output.h"
+#include "fractalimage.h"
+#include "ioutils.h"
 
 using namespace std;
 
@@ -505,7 +505,7 @@ int printHelp() {
 		output << defaultMsg;
 	}
 	output << endl;
-	output << "      --edges=meth     Sets the edge detection method. Options are:" << endl;
+	output << "      --edges=func     Sets the edge detection method. Options are:" << endl;
 	output << "                         \"sobel\" - Sobel filter.";
 	if (DEFAULT_EDGE_DETECTION_METHOD == DoubleImage::M_SOBEL) {
 		output << defaultMsg;

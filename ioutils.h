@@ -1,5 +1,5 @@
-#ifndef _IOUTILS_HPP
-#define _IOUTILS_HPP
+#ifndef _IOUTILS_H
+#define _IOUTILS_H
 
 #include <ostream>
 #include <istream>

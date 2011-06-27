@@ -1,4 +1,4 @@
-#include "doubleimage.hpp"
+#include "doubleimage.h"
 
 #include <iostream>
 #include <utility>
@@ -7,10 +7,10 @@
 #include <cstdio>
 #include <algorithm>
 
-#include "mathutils.hpp"
-#include "constant.hpp"
-#include "imageutils.hpp"
-#include "output.hpp"
+#include "mathutils.h"
+#include "constant.h"
+#include "imageutils.h"
+#include "output.h"
 
 using namespace std;
 
@@ -257,18 +257,20 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 			}
 		}
 
-/*		double r = ((rangeSquaresSum + (s * ((s * domainSquaresSum) - (2.0 *
-				productSum) + (2.0 * o * domainSum))) + (o * ((o * n
-				* n) - (2.0 * rangeSum))))) / n;
-*/
-
-
 		double r = 0;
 		switch(metric) {
 		default:
 		case M_RMS:
 			// Y. Fisher lists one term as o*n^2 which should actually be o*n
 			r = (s*(s*domainSquaresSum + 2*o*domainSum - 2*productSum) + o*(o*n - 2*rangeSum) + rangeSquaresSum)/n;
+/*
+			for (size_t j = 0; j < allConfigs[tm].size(); j ++) {
+				double t = (s * largerPoints[j] + o - smallerPoints[j]);
+				r += t * t;
+			}
+
+			r /= n;
+*/
 			break;
 		case M_SUP:
 			for(size_t j = 0; j < allConfigs[tm].size(); j++) {
@@ -280,14 +282,6 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 			r *= r;
 			break;
 		}
-/*		double r = 0;
-
-		for (size_t j = 0; j < allConfigs[tm].size(); j ++) {
-			double t = (s * smallerPoints[j] + o - largerPoints[j]);
-			r += t * t;
-		}
-		r /= n;
-*/
 		if (r < best.error || best.error == -1) {
 			best.saturation = s;
 			best.brightness = o;

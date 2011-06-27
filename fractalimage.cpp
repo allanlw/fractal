@@ -1,10 +1,10 @@
-#include "fractalimage.hpp"
+#include "fractalimage.h"
 
 #include <stdexcept>
 
-#include "output.hpp"
-#include "imageutils.hpp"
-#include "ioutils.hpp"
+#include "output.h"
+#include "imageutils.h"
+#include "ioutils.h"
 
 using namespace std;
 

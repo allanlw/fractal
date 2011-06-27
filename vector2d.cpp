@@ -3,8 +3,8 @@
 #include <sstream>
 #include <string>
 
-#include "vector2d.hpp"
-#include "mathutils.hpp"
+#include "vector2d.h"
+#include "mathutils.h"
 
 using namespace std;
 

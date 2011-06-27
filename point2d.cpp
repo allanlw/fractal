@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "mathutils.hpp"
-#include "point2d.hpp"
-#include "ioutils.hpp"
+#include "mathutils.h"
+#include "point2d.h"
+#include "ioutils.h"
 
 using namespace std;
 

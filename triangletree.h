@@ -1,7 +1,5 @@
-#ifndef TRIANGLETREE_HPP_
-#define TRIANGLETREE_HPP_
-
-#include "triangle.hpp"
+#ifndef _TRIANGLETREE_H
+#define _TRIANGLETREE_H
 
 #include <deque>
 #include <iterator>
@@ -10,10 +8,10 @@
 #include <istream>
 #include "gd.h"
 
-#include "constant.hpp"
-#include "triangle.hpp"
-#include "doubleimage.hpp"
-#include "imageutils.hpp"
+#include "constant.h"
+#include "triangle.h"
+#include "doubleimage.h"
+#include "imageutils.h"
 
 class TriangleTree {
 public:
@@ -59,4 +57,3 @@ public:
 };
 
 #endif
-

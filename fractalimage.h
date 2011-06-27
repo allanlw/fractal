@@ -1,15 +1,15 @@
-#ifndef _FRACTALIMAGE_HPP
-#define _FRACTALIMAGE_HPP
+#ifndef _FRACTALIMAGE_H
+#define _FRACTALIMAGE_H
 
 #include <vector>
 #include <istream>
 #include <ostream>
 #include "gd.h"
 
-#include "triangletree.hpp"
-#include "doubleimage.hpp"
-#include "triangle.hpp"
-#include "metadata.hpp"
+#include "triangletree.h"
+#include "doubleimage.h"
+#include "triangle.h"
+#include "metadata.h"
 
 class FractalImage {
 public:

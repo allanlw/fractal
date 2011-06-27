@@ -1,5 +1,5 @@
-#ifndef _DOUBLEIMAGE_HPP
-#define _DOUBLEIMAGE_HPP
+#ifndef _DOUBLEIMAGE_H
+#define _DOUBLEIMAGE_H
 
 #include <list>
 #include <vector>
@@ -7,10 +7,10 @@
 #include <iterator>
 #include "gd.h"
 
-#include "triangle.hpp"
-#include "trifit.hpp"
-#include "point2d.hpp"
-#include "imageutils.hpp"
+#include "triangle.h"
+#include "trifit.h"
+#include "point2d.h"
+#include "imageutils.h"
 
 class DoubleImage {
 public:

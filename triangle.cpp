@@ -2,11 +2,11 @@
 #include <vector>
 #include <sstream>
 
-#include "triangle.hpp"
-#include "vector2d.hpp"
-#include "mathutils.hpp"
-#include "constant.hpp"
-#include "ioutils.hpp"
+#include "triangle.h"
+#include "vector2d.h"
+#include "mathutils.h"
+#include "constant.h"
+#include "ioutils.h"
 
 using namespace std;
 

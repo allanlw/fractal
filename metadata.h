@@ -1,5 +1,5 @@
-#ifndef _METADATA_HPP
-#define _METADATA_HPP
+#ifndef _METADATA_H
+#define _METADATA_H
 
 #include <string>
 #include <istream>

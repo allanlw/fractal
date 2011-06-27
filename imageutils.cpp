@@ -1,12 +1,12 @@
-#include "imageutils.hpp"
+#include "imageutils.h"
 
 #include <cmath>
 #include <random>
 #include <cstdio>
 #include <stdexcept>
 
-#include "constant.hpp"
-#include "output.hpp"
+#include "constant.h"
+#include "output.h"
 
 using namespace std;
 
