@@ -8,12 +8,12 @@ triangular regions of the image for encoding.
 == Compiling: ==
 
 Compiling this program requires gd2 development libraries (libgd2-dev on
-debian) and a c++ compilier (more likely than not g++). There is one part of
+debian) and a c++ compiler (more likely than not g++). There is one part of
 the code (in the imageutils.cpp source file) that optionally uses the
 mersenne twister included in the <random> header from C++ Technical Report 1
 if the __GXX_EXPERIMENTAL_CXX0X__ macro is set. Otherwise it will use the
 standard srand() and rand() functions from the standard c library which may
-not be determinalistic (honestly I'm not sure) and which means that the noise
+not be deterministic (honestly I'm not sure) and which means that the noise
 that is generated when decoding fractals as the base image will not be the
 same every time. Either way it is seeded with the file size of the fractal.
 If you do not have access to the TR1 <random> header and desire for your
@@ -42,7 +42,7 @@ approach a good approximation of the original.
 The program only knows how to read .png and .jpg files and I would suggest
 sticking to the png files for simplicity's sake.
 
-For color images it encodes and decodes each channel (RGB) seperately as
+For color images it encodes and decodes each channel (RGB) separately as
 greyscale images.
 
 == Tips: ==
@@ -77,7 +77,7 @@ unless you want funky images.
 
 This program could very well not qualify as a 'compression' program in the
 strictest sense in that the input files are quite often smaller than the output
-files. This is ofcourse because the input files can be quite highly compressed
+files. This is of course because the input files can be quite highly compressed
 to begin with and because the binary file format the the program uses to store
 the fractals in is fairly un-compact. This can be partially remedied by using
 a deflate compression on the binary files which is what I plan to do somewhere
@@ -85,7 +85,7 @@ further down the line.
 
 When it comes to the .bin files that the program produces they are fairly crude
 barely platform independent raw serializations of the internal data structure
-and do not feature a rendundency check. This, too, has the potential to be
+and do not feature a rendundancy check. This, too, has the potential to be
 changed sometime in the future.
 
 Finally currently the program is entirely single-threaded which is horribly
@@ -94,5 +94,5 @@ inefficient for a program that could operate almost entirely in parallel
 later as well.
 
 I hope you take a look at the source code and/or the algorithm behind this
-program. If you've found any of this intersting and/or useful at all I would
+program. If you've found any of this interesting and/or useful at all I would
 appreciate an email at <allanlw@gmail.com>. Thank you!
