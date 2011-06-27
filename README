@@ -85,7 +85,7 @@ further down the line.
 
 When it comes to the .bin files that the program produces they are fairly crude
 barely platform independent raw serializations of the internal data structure
-and do not feature a rendundancy check. This, too, has the potential to be
+and do not feature a redundancy check. This, too, has the potential to be
 changed sometime in the future.
 
 Finally currently the program is entirely single-threaded which is horribly
