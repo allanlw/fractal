@@ -4,6 +4,7 @@
 
 #include "output.hpp"
 #include "imageutils.hpp"
+#include "ioutils.hpp"
 
 using namespace std;
 
@@ -11,6 +12,7 @@ FractalImage::FractalImage(istream& in, DoubleImage image) : image(image) {
 	if (outputVerbose()) {
 		output << "Loading fractal..." << endl;
 	}
+
 	char magic[8];
 	in.read(magic, 7);
 	magic[7] = '\0';
@@ -18,6 +20,8 @@ FractalImage::FractalImage(istream& in, DoubleImage image) : image(image) {
 	if (!(string("FRACTAL") == magic)) {
 		throw logic_error("NOT VALID FRACTAL FILE");
 	}
+
+	metadata = MetaData(in);
 
 	char type = in.get();
 
@@ -36,6 +40,8 @@ FractalImage::FractalImage(istream& in, DoubleImage image) : image(image) {
 }
 
 FractalImage::FractalImage(DoubleImage image, ImageType type) : type(type), image(image) {
+	metadata.setWidth(image.getWidth());
+	metadata.setHeight(image.getHeight());
 	switch(type) {
 	default:
 	case T_GREYSCALE:
@@ -49,6 +55,10 @@ FractalImage::FractalImage(DoubleImage image, ImageType type) : type(type), imag
 	}
 }
 
+MetaData& FractalImage::getMetadata() {
+	return metadata;
+}
+
 FractalImage::ImageType FractalImage::getType() const {
 	return type;
 }
@@ -59,18 +69,20 @@ const DoubleImage& FractalImage::getImage() const {
 
 void FractalImage::serialize(ostream& out) const {
 	out << "FRACTAL";
+
+	metadata.serialize(out);
+
 	switch(type) {
 	default:
 	case T_GREYSCALE:
 		out.put(0);
-		channels[0]->serialize(out);
 		break;
 	case T_COLOR:
 		out.put(1);
-		channels[0]->serialize(out);
-		channels[1]->serialize(out);
-		channels[2]->serialize(out);
 		break;
+	}
+	for (vector<TriangleTree*>::const_iterator it = channels.begin(); it != channels.end(); it++) {
+		(*it)->serialize(out);
 	}
 }
 
@@ -126,4 +138,10 @@ FractalImage::~FractalImage() {
 
 const vector<TriangleTree*>& FractalImage::getChannels() const {
 	return channels;
+}
+
+void FractalImage::setSubdivisionMethod(TriangleTree::SubdivisionMethod sMethod) {
+	for (vector<TriangleTree*>::iterator it = channels.begin(); it != channels.end(); it++) {
+		(*it)->setSubdivisionMethod(sMethod);
+	}
 }

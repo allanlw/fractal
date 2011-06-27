@@ -17,12 +17,8 @@ public:
 	Point2D(double x, double y);
 	Point2D(const Point2D& other);
 	Point2D(std::istream& in);
-	inline const double& getX() const {
-		return x;
-	}
-	inline const double& getY() const {
-		return y;
-	}
+	const double& getX() const;
+	const double& getY() const;
 	double distance(const Point2D& other) const;
 	double distanceSquared(const Point2D& other) const;
 	double originDistance() const;
@@ -34,4 +30,13 @@ public:
 	std::string str () const;
 	void serialize(std::ostream& out) const;
 };
+
+inline const double& Point2D::getX() const {
+	return x;
+}
+
+inline const double& Point2D::getY() const {
+	return y;
+}
+
 #endif

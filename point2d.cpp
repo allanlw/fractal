@@ -5,6 +5,7 @@
 
 #include "mathutils.hpp"
 #include "point2d.hpp"
+#include "ioutils.hpp"
 
 using namespace std;
 
@@ -60,15 +61,11 @@ Point2D& Point2D::operator=(const Point2D& other) {
 }
 
 void Point2D::serialize(ostream& out) const {
-	out.put('P');
-	serializeDouble(out, x);
-	serializeDouble(out, y);
+	serializeFraction(out, x, 0, 1);
+	serializeFraction(out, y, 0, 1);
 }
 
 Point2D::Point2D(istream& in) {
-	if (!(in.get() == 'P')) {
-		throw logic_error("Malformed Point2D");
-	}
-	x = unserializeDouble(in);
-	y = unserializeDouble(in);
+	x = unserializeFraction(in, 0, 1);
+	y = unserializeFraction(in, 0, 1);
 }

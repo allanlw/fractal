@@ -60,6 +60,7 @@ public:
 	void setId(unsigned short id);
 
 	void subdivide(double r01, double r02, double r12);
+	void subdivideBarycentric();
 	AffineTransform getTransformToTarget() const;
 	Rectangle getBoundingBox() const;
 	double getArea() const;

@@ -11,6 +11,7 @@
 #include "imageutils.hpp"
 #include "output.hpp"
 #include "fractalimage.hpp"
+#include "ioutils.hpp"
 
 using namespace std;
 
@@ -27,6 +28,8 @@ static bool fixErrors = DEFAULT_FIX_ERRORS;
 static FractalImage::ImageType colorMode = DEFAULT_COLOR_MODE;
 static DoubleImage::DivisionType dType = DEFAULT_DIVISION_TYPE;
 static DoubleImage::Metric metric = DEFAULT_METRIC;
+static TriangleTree::SubdivisionMethod sMethod = DEFAULT_SUBDIVISION_METHOD;
+static DoubleImage::EdgeDetectionMethod edMethod = DEFAULT_EDGE_DETECTION_METHOD;
 
 static const char* name = "Fractal Image Compressor";
 
@@ -52,7 +55,9 @@ static const struct option longOptions[] = {
 	{"color", no_argument, 0, 'C'},
 	{"greyscale", no_argument, 0, 'G'},
 	{"split", required_argument, 0, '2'},
-	{"metric", required_argument, 0, '3'}
+	{"metric", required_argument, 0, '3'},
+	{"subdivide", required_argument, 0, '6'},
+	{"edges", required_argument, 0, '7'}
 };
 
 static const char* shortOptions = "vqedo:Hw:h:i:c:IVs:CG";
@@ -97,6 +102,12 @@ int main(int argc, char* argv[]) {
 		case 'H':
 			mode = M_HELP;
 			break;
+		case 'I':
+			mode = M_INFO;
+			break;
+		case 'V':
+			mode = M_VERSION;
+			break;
 		case 'o':
 			outputFilename = optarg;
 			break;
@@ -111,12 +122,6 @@ int main(int argc, char* argv[]) {
 			break;
 		case 'c':
 			errorCutoff = atof(optarg);
-			break;
-		case 'I':
-			mode = M_INFO;
-			break;
-		case 'V':
-			mode = M_VERSION;
 			break;
 		case '1': {
 			string arg(optarg);
@@ -161,6 +166,32 @@ int main(int argc, char* argv[]) {
 			}
 			break;
 		}
+		case '6': {
+			string arg(optarg);
+			if (arg == "quad") {
+				sMethod = TriangleTree::M_QUAD;
+			} else if (arg == "centeroid") {
+				sMethod = TriangleTree::M_CENTEROID;
+			} else {
+				if (outputError()) {
+					output << "Invalid subdivision method." << endl;
+				}
+			}
+			break;
+		}
+		case '7': {
+			string arg(optarg);
+			if (arg == "sobel") {
+				edMethod = DoubleImage::M_SOBEL;
+			} else if (arg == "laplace") {
+				edMethod = DoubleImage::M_LAPLACE;
+			} else {
+				if (outputError()) {
+					output << "Invalid edge detection method." << endl;
+				}
+			}
+			break;
+		}
 		case '4':
 			fixErrors = true;
 			break;
@@ -201,7 +232,9 @@ int main(int argc, char* argv[]) {
 			}
 			result = 1;
 		} else {
-			result = encodeImage(argv[optind], outputFilename);
+			for (; optind < argc; optind++) {
+				result = encodeImage(argv[optind], outputFilename);
+			}
 		}
 		break;
 	case M_DECODE:
@@ -211,7 +244,9 @@ int main(int argc, char* argv[]) {
 			}
 			result = 1;
 		} else {
-			result = decodeImage(argv[optind], outputFilename, seed);
+			for(; optind < argc; optind++) {
+				result = decodeImage(argv[optind], outputFilename, seed);
+			}
 		}
 		break;
 	case M_INFO:
@@ -221,7 +256,9 @@ int main(int argc, char* argv[]) {
 			}
 			result = 1;
 		} else {
-			result = infoImage(argv[optind]);
+			for(; optind < argc; optind++) {
+				result = infoImage(argv[optind]);
+			}
 		}
 		break;
 	case M_VERSION:
@@ -246,9 +283,13 @@ int encodeImage(const char* in, const char* out) {
 		return 1;
 	}
 
-	DoubleImage img(lenna, sType, dType, metric);
+	DoubleImage img(lenna, sType, dType, metric, edMethod);
 	FractalImage fractal(img, colorMode);
 	gdFree(lenna);
+
+	fractal.setSubdivisionMethod(sMethod);
+
+	fractal.getMetadata().setSourceFilename(getBasename(in));
 
 	if (outputStd()) {
 		output << in << " loaded, encoding..." << endl;
@@ -317,7 +358,7 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		gdFree(temp);
 	}
 
-	DoubleImage img(seedImage, sType, dType, metric);
+	DoubleImage img(seedImage, sType, dType, metric, edMethod);
 
 	FractalImage fractal(inStream, img);
 
@@ -334,7 +375,7 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		if (outputVerbose()) {
 			output << "evaulating iteration #" << i << endl;
 		}
-		DoubleImage result(fractal.decode(fixErrors), sType, dType, metric);
+		DoubleImage result(fractal.decode(fixErrors), sType, dType, metric, edMethod);
 		fractal.setImage(result);
 		if (false) {
 			ostringstream s;
@@ -453,6 +494,28 @@ int printHelp() {
 		output << defaultMsg;
 	}
 	output << endl;
+	output << "      --subdivide=meth Sets the subdivision method. Options are:" << endl;
+	output << "                         \"quad\" - Divide triangles into 4 more.";
+	if (DEFAULT_SUBDIVISION_METHOD == TriangleTree::M_QUAD) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"centeroid\" - Divide into 3 using centeroid.";
+	if (DEFAULT_SUBDIVISION_METHOD == TriangleTree::M_CENTEROID) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "      --edges=meth     Sets the edge detection method. Options are:" << endl;
+	output << "                         \"sobel\" - Sobel filter.";
+	if (DEFAULT_EDGE_DETECTION_METHOD == DoubleImage::M_SOBEL) {
+		output << defaultMsg;
+	}
+	output << endl;
+	output << "                         \"laplace\" - Laplace filter.";
+	if (DEFAULT_EDGE_DETECTION_METHOD == DoubleImage::M_LAPLACE) {
+		output << defaultMsg;
+	}
+	output << endl;
 	output << endl;
 	output << "Please report bugs to: <allanlw@gmail.com>" << endl;
 	return 0;
@@ -475,6 +538,13 @@ int infoImage(const char* in) {
 	inStream.close();
 
 	output << "fractal loaded. (" << fractal.getSize() << " triangles)" << endl;
+
+	output << "Metadata:" << endl;
+
+	output << "    Width:" << fractal.getMetadata().getWidth() << endl;
+	output << "    Height:" << fractal.getMetadata().getHeight() << endl;
+	output << "    Filename:" << fractal.getMetadata().getSourceFilename() << endl;
+	output << endl;
 
 	output << "Num Channels: " << fractal.getChannels().size() << endl;
 	for (vector<TriangleTree*>::const_iterator it = fractal.getChannels().begin(); it != fractal.getChannels().end(); it++) {

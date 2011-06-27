@@ -3,6 +3,7 @@
 
 #include "trifit.hpp"
 #include "mathutils.hpp"
+#include "ioutils.hpp"
 
 using namespace std;
 
@@ -171,10 +172,9 @@ string TriFit::str() const {
 }
 
 void TriFit::serialize(ostream& out) const {
-	out.put('F');
-	serializeDouble(out, saturation);
-	serializeDouble(out, brightness);
-	serializeDouble(out, error);
+	serializeFraction(out, saturation, 0, 1);
+	serializeFraction(out, brightness, -255, +255);
+	serializeFraction(out, error, 0, 255);
 	out.put(pointMapToInt(pMap));
 	if (best != NULL) {
 		best->serializeID(out);
@@ -185,12 +185,9 @@ void TriFit::serialize(ostream& out) const {
 
 
 TriFit::TriFit(istream& in, unsigned short* t) {
-	if (!(in.get() == 'F')) {
-		throw logic_error("Malformed TriFit");
-	}
-	saturation = unserializeDouble(in);
-	brightness = unserializeDouble(in);
-	error = unserializeDouble(in);
+	saturation = unserializeFraction(in, 0, 1);
+	brightness = unserializeFraction(in, -255, +255);
+	error = unserializeFraction(in, 0, +255);
 	pMap = pointMapFromInt(in.get());
 	*t = unserializeUnsignedShort(in);
 	best = NULL;

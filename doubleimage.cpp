@@ -14,22 +14,22 @@
 
 using namespace std;
 
-DoubleImage::DoubleImage() : image(NULL), sType(DEFAULT_SAMPLING_TYPE), dType(DEFAULT_DIVISION_TYPE), metric(DEFAULT_METRIC) {
+DoubleImage::DoubleImage() : image(NULL), sType(DEFAULT_SAMPLING_TYPE), dType(DEFAULT_DIVISION_TYPE), metric(DEFAULT_METRIC), edMethod(DEFAULT_EDGE_DETECTION_METHOD) {
 }
 
-DoubleImage::DoubleImage(gdImagePtr image) : sType(DEFAULT_SAMPLING_TYPE), dType(DEFAULT_DIVISION_TYPE), metric(DEFAULT_METRIC) {
+DoubleImage::DoubleImage(gdImagePtr image) : sType(DEFAULT_SAMPLING_TYPE), dType(DEFAULT_DIVISION_TYPE), metric(DEFAULT_METRIC), edMethod(DEFAULT_EDGE_DETECTION_METHOD) {
 	copyImage(&this->image, image);
 }
 
-DoubleImage::DoubleImage(const DoubleImage& img) : sType(img.sType), dType(img.dType), metric(img.metric) {
+DoubleImage::DoubleImage(const DoubleImage& img) : sType(img.sType), dType(img.dType), metric(img.metric), edMethod(img.edMethod) {
 	copyImage(&(this->image), img.image);
 	for(map<Channel, gdImagePtr>::const_iterator it = img.edges.begin(); it != img.edges.end(); it++) {
 		copyImage(&edges[it->first], it->second);
 	}
 }
 
-DoubleImage::DoubleImage(gdImagePtr image, SamplingType sType, DivisionType dType, Metric metric) :
-	sType(sType), dType(dType), metric(metric) {
+DoubleImage::DoubleImage(gdImagePtr image, SamplingType sType, DivisionType dType, Metric metric, EdgeDetectionMethod edMethod) :
+	sType(sType), dType(dType), metric(metric), edMethod(edMethod) {
 	copyImage(&this->image, image);
 }
 
@@ -89,6 +89,14 @@ void DoubleImage::setDivisionType(DoubleImage::DivisionType dType) {
 	this->dType = dType;
 }
 
+DoubleImage::EdgeDetectionMethod DoubleImage::getEdgeDetectionMethod() const{
+	return edMethod;
+}
+
+void DoubleImage::setEdgeDetectionMethod(DoubleImage::EdgeDetectionMethod edMethod) {
+	this->edMethod = edMethod;
+}
+
 bool DoubleImage::hasEdges() const {
 	return !this->edges.empty();
 }
@@ -116,16 +124,19 @@ const map<Channel, gdImagePtr>& DoubleImage::getEdges() const {
 }
 
 void DoubleImage::generateEdges() {
-	if (EDGE_DETECT_SOBEL) {
+	switch(edMethod) {
+	case M_SOBEL:
 		edges[C_GREY] = edgeDetectSobel(image, C_GREY);
 		edges[C_RED] = edgeDetectSobel(image, C_RED);
 		edges[C_GREEN] = edgeDetectSobel(image, C_GREEN);
 		edges[C_BLUE] = edgeDetectSobel(image, C_BLUE);
-	} else {
+		break;
+	case M_LAPLACE:
 		edges[C_GREY] = edgeDetectLaplace(image, C_GREY);
 		edges[C_RED] = edgeDetectLaplace(image, C_RED);
-		edges[C_GREEN] = edgeDetectLaplace(image, C_GREEN);
-		edges[C_BLUE] = edgeDetectLaplace(image, C_BLUE);
+		edges[C_GREEN] = edgeDetectSobel(image, C_GREEN);
+		edges[C_BLUE] = edgeDetectSobel(image, C_BLUE);
+		break;
 	}
 }
 
@@ -162,8 +173,8 @@ int DoubleImage::doubleToIntY(double y) const {
 }
 
 double DoubleImage::valueAt(double x, double y, Channel channel) const {
-	const int _x = doubleToIntX(x);
-	const int _y = doubleToIntY(y);
+	const int _x = doubleToInt(x, 0, gdImageSX(image)-1);
+	const int _y = doubleToInt(y, 0, gdImageSY(image)-1);
 
 	const int val = getPixel(image, _x, _y, channel, false);
 	return val;
@@ -187,18 +198,28 @@ double DoubleImage::valueAt(const Point2D& point, Channel channel) const {
 
 TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* larger, Channel channel) {
 
-	map<TriFit::PointMap, vector<double> > allConfigs = getAllConfigurations(smaller, larger, channel);
+	if (sType == T_BOTHSAMPLE) {
+		this->sType = T_SUBSAMPLE;
+		TriFit sub = getOptimalFit(smaller, larger, channel);
+		this->sType = T_SUPERSAMPLE;
+		TriFit super = getOptimalFit(smaller, larger, channel);
+		this->sType = T_BOTHSAMPLE;
+		return (sub.error < super.error)?sub:super;
+	}
+
+	map<TriFit::PointMap, vector<double> > allConfigs = (sType == T_SUBSAMPLE)?getAllConfigurations(smaller, larger, channel):getAllConfigurations(larger, smaller, channel);
 	TriFit best(0, 0, -1, TriFit::P000, larger);
 
 	const TriFit::PointMap tm = TriFit::P000;
-
-	const vector<double>& largerPoints = allConfigs[tm];
 
 	for (map<TriFit::PointMap, vector<double> >::const_iterator it = allConfigs.begin(); it != allConfigs.end(); it++) {
 		if (it->first == TriFit::P000) {
 			continue;
 		}
-		const vector<double>& smallerPoints = it->second;
+
+		const vector<double>& largerPoints = (sType == T_SUBSAMPLE)?it->second:allConfigs[tm];
+		const vector<double>& smallerPoints = (sType == T_SUBSAMPLE)?allConfigs[tm]:it->second;
+
 		double domainSum = sum(largerPoints.begin(), largerPoints.end());
 		double domainSquaresSum = sumSquares(largerPoints.begin(), largerPoints.end());
 		double productSum = dotProduct(largerPoints.begin(), largerPoints.end(),
@@ -208,22 +229,25 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 		double rangeSquaresSum = sumSquares(smallerPoints.begin(), smallerPoints.end());
 		double n = smallerPoints.size();
 
-		double denom = ((n * n * domainSquaresSum) - (domainSum * domainSum));
+		// Y. Fisher lists n^2 here but it should be just n
+		double denom = ((n * domainSquaresSum) - (domainSum * domainSum));
 
 		double s;
 		double o;
+
 		if (doublesEqual(denom, 0.0)) {
 			s = 0;
 			o = rangeSum / (n);
 		} else {
-			s = ((n * n * productSum) - (domainSum * rangeSum)) / denom;
+			// Again, n^2 is written but it should be n
+			s = ((n * productSum) - (domainSum * rangeSum)) / denom;
 
 			if (s > 1) {
 				s = 1;
 			} else if (s < 0) {
 				s = 0;
 			}
-
+			// n^2 is written but it should be just n
 			o = (rangeSum - (s*domainSum)) / n;
 
 			if (o < -gdRedMax) {
@@ -239,23 +263,21 @@ TriFit DoubleImage::getOptimalFit(const Triangle* smaller, const Triangle* large
 */
 
 
-//		s^2a^2 + soa -sab + osa + o^2 - ob - sab - bo + b^2
-//		s*(sa^2 + 2oa - 2ab) + o(o - 2b) + b^2
-
-
 		double r = 0;
 		switch(metric) {
 		default:
 		case M_RMS:
-			r = sqrt((s*(s*domainSquaresSum + 2*o*domainSum - 2*productSum) + o*(o*n - 2*rangeSum) + rangeSquaresSum)/n);
+			// Y. Fisher lists one term as o*n^2 which should actually be o*n
+			r = (s*(s*domainSquaresSum + 2*o*domainSum - 2*productSum) + o*(o*n - 2*rangeSum) + rangeSquaresSum)/n;
 			break;
 		case M_SUP:
 			for(size_t j = 0; j < allConfigs[tm].size(); j++) {
-				double t = (s*smallerPoints[j]+o - largerPoints[j]);
+				double t = (s*largerPoints[j]+o - smallerPoints[j]);
 				if (t > r) {
 					r = t;
 				}
 			}
+			r *= r;
 			break;
 		}
 /*		double r = 0;
@@ -389,8 +411,8 @@ void DoubleImage::mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Channe
 	case T_SUBSAMPLE: {
 		const vector<Point2D>& points = getPointsInside(t);
 
-//		const AffineTransform trans = AffineTransform(*t, *fit.best, fit.pMap);
-		const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap).getInverse();
+//		const AffineTransform trans = AffineTransform(*fit.best, *t, fit.pMap).getInverse();
+		const AffineTransform trans = AffineTransform(*t, *fit.best, fit.pMap);
 
 		for (vector<Point2D>::const_iterator it = points.begin(); it != points.end(); it++) {
 			mapPoint(to, fit, trans.transform(*it), *it, channel);
@@ -436,28 +458,7 @@ void DoubleImage::mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& sour
 map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const Triangle* smaller, const Triangle* larger, Channel channel) {
 	map<TriFit::PointMap, vector<double> > result;
 
-	vector<Point2D> largerPoints;
-
-	switch (sType) {
-	case T_BOTHSAMPLE:
-	case T_SUPERSAMPLE:
-		largerPoints = getPointsInside(larger);
-		if (sType != T_BOTHSAMPLE) {
-			break;
-		}
-	case T_SUBSAMPLE: {
-		const vector<Point2D>& smallerPoints = getPointsInside(smaller);
-
-		for (char i = 0; i < TriFit::NUM_MAPS; i++) {
-			const TriFit::PointMap m = TriFit::pointMapFromInt(i);
-			const AffineTransform trans = AffineTransform(*larger, *smaller, m).getInverse();
-			for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
-				largerPoints.push_back(trans.transform(*it));
-			}
-		}
-		break;
-	}
-	}
+	const vector<Point2D>& smallerPoints = getPointsInside(smaller);
 
 	for (char i = 0; i < TriFit::NUM_MAPS; i++) {
 		const TriFit::PointMap m = TriFit::pointMapFromInt(i);
@@ -465,20 +466,22 @@ map<TriFit::PointMap, vector<double> > DoubleImage::getAllConfigurations(const T
 		result[m] = vector<double>(0);
 		vector<double>& v = result[m];
 
-		v.reserve(largerPoints.size());
+//		const AffineTransform small2large = AffineTransform(*larger, *smaller, m).getInverse();
+		const AffineTransform small2large = AffineTransform(*smaller, *larger, m);
 
-		const AffineTransform trans = AffineTransform(*larger, *smaller, m);
-		for (vector<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
-			v.push_back(valueAt(trans.transform(*it), channel));
+		v.reserve(smallerPoints.size());
+
+		for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
+			v.push_back(valueAt(small2large.transform(*it), channel));
 		}
 	}
 
 	result[TriFit::P000] = vector<double>(0);
 	vector<double>& v = result[TriFit::P000];
 
-	v.reserve(largerPoints.size());
+	v.reserve(smallerPoints.size());
 
-	for (vector<Point2D>::const_iterator it = largerPoints.begin(); it != largerPoints.end(); it++) {
+	for (vector<Point2D>::const_iterator it = smallerPoints.begin(); it != smallerPoints.end(); it++) {
 		v.push_back(valueAt(*it, channel));
 	}
 

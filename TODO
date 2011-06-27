@@ -1,6 +1,7 @@
 Things that need to be implimented:
 
- * Sampling options should exist for encoding as well as decoding.
- * Serialized FractalImages should include some source image information. e.g. metadata
  * Delicious zlib compression.
  * README files and other useful documentation.
+
+for the readme:
+ laplace better for high, sobel better for low?

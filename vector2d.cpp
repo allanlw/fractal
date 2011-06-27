@@ -13,14 +13,14 @@ Vector2D::Vector2D(const Vector2D& other) : magnitude(other.magnitude), angle(ot
 
 void Vector2D::normalize() {
 	while (angle < 0) {
-		angle += PI * 2;
+		angle += M_PI * 2;
 	}
-	while (angle > PI * 2) {
-		angle -= PI * 2;
+	while (angle > M_PI * 2) {
+		angle -= M_PI * 2;
 	}
-	if (angle >= PI) {
+	if (angle >= M_PI) {
 		magnitude *= -1;
-		angle -= PI;
+		angle -= M_PI;
 	}
 }
 

@@ -16,6 +16,11 @@
 #include "imageutils.hpp"
 
 class TriangleTree {
+public:
+	enum SubdivisionMethod {
+		M_QUAD,
+		M_CENTEROID
+	};
 private:
 	Channel channel;
 	DoubleImage& image;
@@ -23,7 +28,9 @@ private:
 	std::vector<Triangle*> allTriangles;
 	unsigned short lastId;
 
-	void subivide(Triangle* t);
+	SubdivisionMethod sMethod;
+
+	void subdivide(Triangle* t);
 	void unserialize(std::istream& in);
 public:
 	TriangleTree(DoubleImage& image, Channel channel);
@@ -34,8 +41,10 @@ public:
 	Channel getChannel() const;
 	const std::deque<Triangle*>& getUnassigned() const;
 	const std::vector<Triangle*>& getAllTriangles() const;
+	SubdivisionMethod getSubdivisionMethod() const;
+	void setSubdivisionMethod(SubdivisionMethod sMethod);
+
 	Triangle* assignOne(double cutoff);
-	void subdivide(Triangle* t);
 	static void getAllAbove(Triangle* t, std::insert_iterator<std::list<Triangle*> >& it);
 	static void getAllBelow(Triangle* t, std::insert_iterator<std::list<Triangle*> >& it);
 	static void getAllSiblings(Triangle* t, std::insert_iterator<std::list<Triangle*> >& it);

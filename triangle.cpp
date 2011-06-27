@@ -6,6 +6,7 @@
 #include "vector2d.hpp"
 #include "mathutils.hpp"
 #include "constant.hpp"
+#include "ioutils.hpp"
 
 using namespace std;
 
@@ -18,9 +19,6 @@ Triangle::Triangle(const Point2D& point0, const Point2D& point1,
 }
 
 Triangle::Triangle(istream& in) : nextSibling(NULL), prevSibling(NULL), parent(NULL), children(0) {
-	if (in.get() != 'T') {
-		throw logic_error("Malformed Triangle");
-	}
 	unresolvedDependencies = new Dependencies;
 	id = unserializeUnsignedShort(in);
 	unresolvedDependencies->parent = unserializeUnsignedShort(in);
@@ -194,6 +192,7 @@ void Triangle::subdivide(double r01, double r02, double r12) {
                                ((points[2].getY() - points[1].getY()) * r12));
 
 	children.resize(4);
+
 	children[0] = new Triangle(points[0], midpoint01, midpoint02);
 	children[1] = new Triangle(points[1], midpoint01, midpoint12);
 	children[2] = new Triangle(points[2], midpoint02, midpoint12);
@@ -211,6 +210,27 @@ void Triangle::subdivide(double r01, double r02, double r12) {
 	children[2]->setNextSibling(children[3]);
 
 	assignNextChildSibling(nextSibling, children[3]);
+
+	assignPrevChildSibling(prevSibling, children[0]);
+}
+
+void Triangle::subdivideBarycentric() {
+	Point2D center = calcCenteroid();
+
+	children.resize(3);
+	children[0] = new Triangle(points[0], points[1], center);
+	children[1] = new Triangle(points[1], points[2], center);
+	children[2] = new Triangle(points[2], points[0], center);
+
+	children[0]->setParent(this);
+	children[1]->setParent(this);
+	children[2]->setParent(this);
+
+	children[0]->setNextSibling(children[1]);
+
+	children[1]->setNextSibling(children[2]);
+
+	assignNextChildSibling(nextSibling, children[2]);
 
 	assignPrevChildSibling(prevSibling, children[0]);
 }
@@ -252,7 +272,6 @@ Point2D Triangle::calcCenteroid() const {
 }
 
 void Triangle::serialize(ostream& out) const {
-	out.put('T');
 	serializeID(out);
 	if (parent != NULL) {
 		parent->serializeID(out);

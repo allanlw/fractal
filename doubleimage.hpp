@@ -28,6 +28,10 @@ public:
 		M_RMS,
 		M_SUP
 	};
+	enum EdgeDetectionMethod {
+		M_SOBEL,
+		M_LAPLACE
+	};
 private:
 	gdImagePtr image;
 	std::map<Channel, gdImagePtr> edges;
@@ -35,15 +39,18 @@ private:
 	SamplingType sType;
 	DivisionType dType;
 	Metric metric;
+	EdgeDetectionMethod edMethod;
 
 	void mapPoint(gdImagePtr to, const TriFit& fit, const Point2D& source, const Point2D& dest, Channel channel);
 	static void copyImage(gdImagePtr* to, gdImagePtr from);
 public:
 	DoubleImage();
 	DoubleImage(gdImagePtr image);
-	DoubleImage(gdImagePtr image, SamplingType sType, DivisionType dType, Metric metric);
+	DoubleImage(gdImagePtr image, SamplingType sType, DivisionType dType, Metric metric, EdgeDetectionMethod edMethod);
 	DoubleImage(const DoubleImage& img);
 	DoubleImage& operator=(const DoubleImage& img);
+	~DoubleImage();
+
 	int getWidth() const;
 	int getHeight() const;
 	Metric getMetric() const;
@@ -52,7 +59,14 @@ public:
 	void setSamplingType(SamplingType sType);
 	DivisionType getDivisionType() const;
 	void setDivisionType(DivisionType dType);
+	EdgeDetectionMethod getEdgeDetectionMethod() const;
+	void setEdgeDetectionMethod(EdgeDetectionMethod edMethod);
 	bool hasEdges() const;
+	void setImage(gdImagePtr image);
+	gdImagePtr getImage() const;
+	void generateEdges();
+	const std::map<Channel, gdImagePtr>& getEdges() const;
+
 	double snapXToGrid(double x) const;
 	double snapYToGrid(double y) const;
 	double floorXToGrid(double x) const;
@@ -61,26 +75,23 @@ public:
 	double ceilYToGrid(double y) const;
 	double getXInc() const;
 	double getYInc() const;
-	const std::vector<Point2D>& getPointsInside(const Triangle* t);
-	std::vector<Point2D> getPointsOnLine(const Point2D& point1, const Point2D& point2) const;
+	int doubleToIntX(double x) const;
+	int doubleToIntY(double y) const;
+
 	double valueAt(double x, double y, Channel channel) const;
 	double valueAt(const Point2D& point, Channel channel) const;
 	double edgeAt(double x, double y, Channel channel) const;
 	double edgeAt(const Point2D& point, Channel channel) const;
-	void generateEdges();
+
+	const std::vector<Point2D>& getPointsInside(const Triangle* t);
+	std::vector<Point2D> getPointsOnLine(const Point2D& point1, const Point2D& point2) const;
 	TriFit getOptimalFit(const Triangle* smaller, const Triangle* larger, Channel channel);
 	std::map<TriFit::PointMap, std::vector<double> > getAllConfigurations(const Triangle* smaller, const Triangle* larger, Channel channel);
-	static std::vector<Point2D> getCorners();
 	TriFit getBestMatch(const Triangle* smaller, std::list<Triangle*>::const_iterator start, std::list<Triangle*>::const_iterator end, Channel channel);
-	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Channel channel);
 	double getBestDivide(const Point2D& point1, const Point2D& point2, Channel channel) const;
-	void setImage(gdImagePtr image);
-	gdImagePtr getImage() const;
-	const std::map<Channel, gdImagePtr>& getEdges() const;
-	~DoubleImage();
+	void mapPoints(const Triangle* t, TriFit fit, gdImagePtr to, Channel channel);
 
-	int doubleToIntX(double x) const;
-	int doubleToIntY(double y) const;
+	static std::vector<Point2D> getCorners();
 };
 
 #endif

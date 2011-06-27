@@ -62,7 +62,7 @@ int wrappedGetPixel(const gdImagePtr img, int x, int y) {
 	if (y >= gdImageSY(img)) {
 		y -= gdImageSY(img);
 	}
-	return gdImageGetPixel(img, x, y);
+	return gdImageTrueColorPixel(img, x, y);
 }
 
 unsigned char getGrey(const gdImagePtr img, int c) {
@@ -91,7 +91,12 @@ unsigned char getColor(const gdImagePtr img, int c, Channel channel) {
 }
 
 unsigned char getPixel(const gdImagePtr img, int x, int y, Channel channel, bool check) {
-	const int c = check?wrappedGetPixel(img, x, y):gdImageGetPixel(img,x,y);
+	int c;
+	if (check) {
+		c = wrappedGetPixel(img, x, y);
+	} else {
+		c = gdImageTrueColorPixel(img, x, y);
+	}
 	return getColor(img, c, channel);
 }
 
@@ -154,10 +159,20 @@ void clearAlpha(gdImagePtr img) {
 	}
 }
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <random>
+#else
+#include <cstdlib>
+#endif
+
 gdImagePtr blankCanvas(int width, int height, unsigned long seed) {
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
 	std::mt19937 rand;
 
 	rand.seed(seed);
+#else
+	srand(seed);
+#endif
 
 	gdImagePtr result = gdImageCreateTrueColor(width, height);
 

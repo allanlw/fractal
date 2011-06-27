@@ -1,6 +1,8 @@
 #ifndef _CONSTANT_HPP
 #define _CONSTANT_HPP
 
+// Default options that can be changed at runtime
+
 #ifndef DEFAULT_ENC_FNAME
 #define DEFAULT_ENC_FNAME "fractal.bin"
 #endif
@@ -65,12 +67,18 @@
 #define DEFAULT_METRIC DoubleImage::M_RMS
 #endif
 
-#ifndef SAME_SIDE_TECHNIQUE
-#define SAME_SIDE_TECHNIQUE false
+#ifndef DEFAULT_SUBDIVISION_METHOD
+#define DEFAULT_SUBDIVISION_METHOD TriangleTree::M_QUAD
 #endif
 
-#ifndef EDGE_DETECT_SOBEL
-#define EDGE_DETECT_SOBEL true
+#ifndef DEFAULT_EDGE_DETECTION_METHOD
+#define DEFAULT_EDGE_DETECTION_METHOD DoubleImage::M_LAPLACE
+#endif
+
+// Compile time only options
+
+#ifndef SAME_SIDE_TECHNIQUE
+#define SAME_SIDE_TECHNIQUE false
 #endif
 
 #ifndef MIN_SUBDIVIDE_RATIO
@@ -94,7 +102,15 @@
 #endif
 
 #ifndef PIXELS_FOR_INTERP
-#define PIXELS_FOR_INTERP 3
+#define PIXELS_FOR_INTERP 2
+#endif
+
+#ifndef MAX_SUBDIVIDE_SIZE
+#define MAX_SUBDIVIDE_SIZE 20
+#endif
+
+#ifndef MAX_NUM_TRIANGLES
+#define MAX_NUM_TRIANGLES 0xFFFE
 #endif
 
 #endif

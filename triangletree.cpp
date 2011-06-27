@@ -7,12 +7,13 @@
 #include <stdexcept>
 
 #include "mathutils.hpp"
+#include "ioutils.hpp"
 #include "imageutils.hpp"
 #include "output.hpp"
 
 using namespace std;
 
-TriangleTree::TriangleTree(DoubleImage& image, Channel channel) : channel(channel), image(image), lastId(0) {
+TriangleTree::TriangleTree(DoubleImage& image, Channel channel) : channel(channel), image(image), lastId(0), sMethod(DEFAULT_SUBDIVISION_METHOD) {
 	std::vector<Point2D> corners = image.getCorners();
 	Triangle* head = new Triangle(corners[0], corners[1], corners[2]);
 	head->setNextSibling(new Triangle(corners[0], corners[3], corners[2]));
@@ -22,7 +23,7 @@ TriangleTree::TriangleTree(DoubleImage& image, Channel channel) : channel(channe
 	allTriangles.push_back(head->getNextSibling());
 }
 
-TriangleTree::TriangleTree(DoubleImage& image, istream& in, Channel channel) : channel(channel), image(image), lastId(0) {
+TriangleTree::TriangleTree(DoubleImage& image, istream& in, Channel channel) : channel(channel), image(image), lastId(0), sMethod(DEFAULT_SUBDIVISION_METHOD) {
 	this->unserialize(in);
 }
 
@@ -32,7 +33,7 @@ TriangleTree::~TriangleTree() {
 	}
 }
 
-TriangleTree::TriangleTree(const TriangleTree& tree) : image(tree.image), lastId(0) {
+TriangleTree::TriangleTree(const TriangleTree& tree) : image(tree.image), lastId(0), sMethod(tree.sMethod) {
 	std::stringstream serial(ios_base::out|ios_base::in|ios_base::binary);
 
 	tree.serialize(serial);
@@ -54,6 +55,14 @@ const std::deque<Triangle*>& TriangleTree::getUnassigned() const {
 
 const std::vector<Triangle*>& TriangleTree::getAllTriangles() const {
 	return allTriangles;
+}
+
+TriangleTree::SubdivisionMethod TriangleTree::getSubdivisionMethod() const {
+	return sMethod;
+}
+
+void TriangleTree::setSubdivisionMethod(TriangleTree::SubdivisionMethod sMethod) {
+	this->sMethod = sMethod;
 }
 
 Triangle* TriangleTree::assignOne(double cutoff) {
@@ -86,8 +95,9 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 		TriFit best = image.getBestMatch(next, above.begin(), above.end(), channel);
 		if (outputDebug()) {
 			output << " - Best Error: " << best.error << endl;
+			output << " - # points inside: " << image.getPointsInside(next).size() << endl;
 		}
-		if (best.error < cutoff && best.error >= 0) {
+		if (allTriangles.size() == MAX_NUM_TRIANGLES || ((best.error < cutoff*cutoff || image.getPointsInside(next).size() < MAX_SUBDIVIDE_SIZE) && best.error >= 0)) {
 			next->setTarget(best);
 		} else {
 			subdivide(next);
@@ -97,19 +107,26 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 }
 
 void TriangleTree::subdivide(Triangle* t) {
-	if (!image.hasEdges()) {
-		image.generateEdges();
-	}
-	const vector<Point2D>& points = t->getPoints();
-	double r01 = image.getBestDivide(points[0], points[1], channel);
-	double r02 = image.getBestDivide(points[0], points[2], channel);
-	double r12 = image.getBestDivide(points[1], points[2], channel);
-	if (outputDebug()) {
-		output << " - Subdivide Ratios: " << r01 << ", " << r02 << ", " << r12 << endl;
-	}
+	switch(sMethod) {
+	case M_QUAD: {
+		if (!image.hasEdges()) {
+			image.generateEdges();
+		}
+		const vector<Point2D>& points = t->getPoints();
+		double r01 = image.getBestDivide(points[0], points[1], channel);
+		double r02 = image.getBestDivide(points[0], points[2], channel);
+		double r12 = image.getBestDivide(points[1], points[2], channel);
+		if (outputDebug()) {
+			output << " - Subdivide Ratios: " << r01 << ", " << r02 << ", " << r12 << endl;
+		}
 
-	t->subdivide(r01, r02, r12);
-
+		t->subdivide(r01, r02, r12);
+		break;
+	}
+	case M_CENTEROID:
+		t->subdivideBarycentric();
+		break;
+	}
 	for(vector<Triangle*>::const_iterator it = t->getChildren().begin(); it != t->getChildren().end(); it++) {
 		unassigned.push_back(*it);
 		allTriangles.push_back(*it);
