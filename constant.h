@@ -110,7 +110,7 @@
 #endif
 
 #ifndef MAX_NUM_TRIANGLES
-#define MAX_NUM_TRIANGLES 0xFFFE
+#define MAX_NUM_TRIANGLES 0xFFFF
 #endif
 
 #endif

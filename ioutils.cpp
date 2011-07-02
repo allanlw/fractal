@@ -100,6 +100,6 @@ string getBasename(string filename) {
 	if (loc == string::npos) {
 		return filename;
 	} else {
-		return filename.substr(loc);
+		return filename.substr(loc+1);
 	}
 }
