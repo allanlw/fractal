@@ -468,12 +468,12 @@ int printHelp() {
 	}
 	output << endl;
 	output << "      --split=type     Sets the triangle splitting type. Options are:" << endl;
-	output << "                         \"high\" - split on high edge entropy.";
+	output << "                         \"high\" - split on high entropy.";
 	if (DEFAULT_DIVISION_TYPE == DoubleImage::T_HIGHENTROPY) {
 		output << defaultMsg;
 	}
 	output << endl;
-	output << "                         \"low\" - split on least image edge entropy.";
+	output << "                         \"low\" - split on low entropy.";
 	if (DEFAULT_DIVISION_TYPE == DoubleImage::T_LOWENTROPY) {
 		output << defaultMsg;
 	}
@@ -495,12 +495,12 @@ int printHelp() {
 	}
 	output << endl;
 	output << "      --subdivide=meth Sets the subdivision method. Options are:" << endl;
-	output << "                         \"quad\" - Divide triangles into 4 more.";
+	output << "                         \"quad\" - Divide into fourths.";
 	if (DEFAULT_SUBDIVISION_METHOD == TriangleTree::M_QUAD) {
 		output << defaultMsg;
 	}
 	output << endl;
-	output << "                         \"centeroid\" - Divide into 3 using centeroid.";
+	output << "                         \"centeroid\" - Divide into thirds.";
 	if (DEFAULT_SUBDIVISION_METHOD == TriangleTree::M_CENTEROID) {
 		output << defaultMsg;
 	}
