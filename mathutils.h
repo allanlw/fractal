@@ -51,7 +51,7 @@ static inline double signum(double d) {
 }
 
 static inline int doubleToInt(double d, int min, int max) {
-	const int _x = (int)round(d * max);
+	const int _x = (int)(min + round(d * max));
 	if (_x <= min) {
 		return min;
 	} else if (_x >= max) {
