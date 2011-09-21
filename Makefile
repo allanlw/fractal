@@ -1,5 +1,4 @@
 LDFLAGS = -lm -lgd
-STDFLAGS = -Wall -std=c++0x
 
 # -msse2 does NOT inline calls to cos,tan, etc. is this bad?
 
@@ -8,9 +7,12 @@ FLAGS_ARCH = -march=native
 # FLAGS_MATH = -ffast-math
 # FLAGS_DEBUG = -ggdb -Wextra
 # FLAGS_PROF = -pg
+FLAGS_OPT = -O
+FLAGS_STD = -std=c++0x
+FLAGS_WARN = -Wall -Wextra
 
-CXXFLAGS = $(FLAGS_ARCH) $(FLAGS_MATH) -O $(STDFLAGS) $(FLAGS_DEBUG) $(FLAGS_PROF)
-
+CXXFLAGS = $(FLAGS_ARCH) $(FLAGS_MATH) $(FLAGS_OPT) $(FLAGS_DEBUG)
+CXXFLAGS += $(FLAGS_PROF) $(FLAGS_STD) $(FLAGS_WARN)
 CPPSOURCES = $(wildcard *.cpp)
 CPPHEADERS = $(wildcard *.h)
 
@@ -20,8 +22,9 @@ CXX = g++
 
 all: fractal
 
-%.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) $+
+# yeah I know I know this could cause extra builds but who cares.
+%.o: %.cpp $(CPPHEADERS)
+	$(CXX) -c $(CXXFLAGS) $<
 
 fractal: $(OBJS) $(CPPHEADERS)
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) -o fractal $(OBJS)

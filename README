@@ -88,7 +88,7 @@ barely platform independent raw serializations of the internal data structure
 and do not feature a redundancy check. This, too, has the potential to be
 changed sometime in the future.
 
-Finally currently the program is entirely single-threaded which is horribly
+Finally, currently the program is entirely single-threaded which is horribly
 inefficient for a program that could operate almost entirely in parallel
 (especially with colored images!). I plan to add posix thread support sometime
 later as well.
