@@ -122,8 +122,7 @@ bool DoubleImage::hasEdges() const {
 
 void DoubleImage::copyImage(gdImagePtr* to, gdImagePtr from) {
 	if (from != NULL) {
-		*to = gdImageCreateTrueColor(gdImageSX(from), gdImageSY(from));
-		gdImageCopy(*to, from, 0, 0, 0, 0, gdImageSX(from), gdImageSY(from));
+		*to = gdImageClone(from);
 	} else {
 		*to = NULL;
 	}

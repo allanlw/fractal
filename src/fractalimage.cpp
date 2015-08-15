@@ -111,7 +111,11 @@ gdImagePtr FractalImage::decode(bool fixErrors) {
 	gdImageAlphaBlending(newImage, 0);
 	gdImageSaveAlpha(newImage, 1);
 
-	gdImageFill(newImage, 0, 0, ERROR_COLOR);
+	for (int x = 0; x < gdImageSX(newImage); x++) {
+		for (int y = 0; y < gdImageSY(newImage); y++) {
+			gdImageSetPixel(newImage, x, y, ERROR_COLOR);
+		}
+	}
 	for (std::vector<TriangleTree*>::const_iterator it = channels.begin(); it != channels.end(); it++) {
 		(*it)->renderTo(newImage, fixErrors);
 	}

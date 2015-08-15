@@ -256,18 +256,6 @@ gdImagePtr loadImage(const char* fName) {
 
 	gdImagePtr lenna = gdImageCreateFromPng(inputHandle);
 
-	if (lenna == NULL) {
-		if (outputDebug()) {
-			output << "Could not load png from " << fName << ", trying JPEG." << endl;
-		}
-		fseek(inputHandle, 0, SEEK_SET);
-		lenna = gdImageCreateFromJpeg(inputHandle);
-		if (lenna == NULL) {
-			fclose(inputHandle);
-			throw runtime_error("Could not load PNG or JPEG.");
-		}
-	}
-
 	fclose(inputHandle);
 	return lenna;
 }

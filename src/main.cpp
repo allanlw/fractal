@@ -70,7 +70,6 @@ static const struct option longOptions[] = {
 	{"sample", required_argument, 0, '1'},
 	{"fixerrors", no_argument, 0, '4'},
 	{"no-fixerrors", no_argument, 0, '5'},
-	{"seed", required_argument, 0, 's'},
 	{"color", no_argument, 0, 'C'},
 	{"greyscale", no_argument, 0, 'G'},
 	{"split", required_argument, 0, '2'},
@@ -79,10 +78,10 @@ static const struct option longOptions[] = {
 	{"edges", required_argument, 0, '7'}
 };
 
-static const char* shortOptions = "vqedo:Hw:h:i:c:IVs:CG";
+static const char* shortOptions = "vqedo:Hw:h:i:c:IVCG";
 
 static int encodeImage(const char* in, const char* out);
-static int decodeImage(const char* in, const char* out, const char* seed);
+static int decodeImage(const char* in, const char* out);
 static int printHelp();
 static int printVersion();
 static int infoImage(const char* in);
@@ -97,7 +96,6 @@ int main(int argc, char* argv[]) {
 		M_VERSION
 	} mode = M_UNDEF;
 	char * outputFilename = NULL;
-	char * seed = NULL;
 	int optIndex = 0;
 	int c;
 
@@ -217,9 +215,6 @@ int main(int argc, char* argv[]) {
 		case '5':
 			fixErrors = false;
 			break;
-		case 's':
-			seed = optarg;
-			break;
 		case 'C':
 			colorMode = FractalImage::T_COLOR;
 			break;
@@ -264,7 +259,7 @@ int main(int argc, char* argv[]) {
 			result = 1;
 		} else {
 			for(; optind < argc; optind++) {
-				result = decodeImage(argv[optind], outputFilename, seed);
+				result = decodeImage(argv[optind], outputFilename);
 			}
 		}
 		break;
@@ -336,7 +331,7 @@ int encodeImage(const char* in, const char* out) {
 	return 0;
 }
 
-int decodeImage(const char * in, const char * out, const char* seed) {
+int decodeImage(const char * in, const char * out) {
 	if (out == NULL) {
 		out = DEFAULT_DEC_FNAME;
 	}
@@ -354,28 +349,11 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 
 	gdImagePtr seedImage = NULL;
 
-	if (seed == NULL) {
-		inStream.seekg (0, ios::end);
-		unsigned long length = inStream.tellg();
-		inStream.seekg (0, ios::beg);
+	inStream.seekg (0, ios::end);
+	unsigned long length = inStream.tellg();
+	inStream.seekg (0, ios::beg);
 
-		seedImage = blankCanvas(width, height, length);
-	} else {
-		gdImagePtr temp = NULL;
-		try {
-			temp = loadImage(seed);
-		} catch (const runtime_error& e) {
-			openError(seed, e.what());
-			return 1;
-		}
-
-		seedImage = gdImageCreateTrueColor(width, height);
-
-		gdImageCopyResampled(seedImage, temp, 0, 0, 0, 0,
-		                     gdImageSX(seedImage), gdImageSY(seedImage),
-		                     gdImageSX(temp), gdImageSY(temp));
-		gdFree(temp);
-	}
+	seedImage = blankCanvas(width, height, length);
 
 	DoubleImage img(seedImage, sType, dType, metric, edMethod);
 
@@ -396,19 +374,6 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		}
 		DoubleImage result(fractal.decode(fixErrors), sType, dType, metric, edMethod);
 		fractal.setImage(result);
-		if (false) {
-			ostringstream s;
-			s << "e" << i << ".png";
-			string fname = s.str();
-			output << "saving to " << fname << endl;
-			FILE* oimg = fopen(fname.c_str(), "w");
-			if (oimg == NULL) {
-				openError(fname);
-				return 1;
-			}
-			gdImagePng(fractal.getImage().getImage(), oimg);
-			fclose(oimg);
-		}
 		if (outputVerbose()) {
 			output << "Iteration #" << i <<" done." << endl;
 		}
@@ -418,8 +383,8 @@ int decodeImage(const char * in, const char * out, const char* seed) {
 		output << "Rendering done, saving to " << out << "..." << endl;
 	}
 
-	FILE* outputImg = fopen(out, "w");
 
+	FILE* outputImg = fopen(out, "w");
 	if (outputImg == NULL) {
 		openError(out);
 		return 1;
@@ -470,7 +435,6 @@ int printHelp() {
 	output << "Decoding Options:" << endl;
 	output << "  -w, --width=num      Set the output width in pixels. Default: " << DEFAULT_WIDTH << endl;
 	output << "  -h, --height=num     Set the output height in pixels. Default: " << DEFAULT_HEIGHT <<  endl;
-	output << "  -s, --seed=fname     Specify a custom seed image. (resized to w,h)" << endl;
 	output << "  -i, --iterations=num Set the number of iterations for decoding. Default: " << DEFAULT_ITERATIONS << endl;
 	output << "      --(no-)fixerrors Interpolate (or not) to fix errors. Default is " << (DEFAULT_FIX_ERRORS?"fix":"don't fix") << "." << endl;
 	output << endl;
