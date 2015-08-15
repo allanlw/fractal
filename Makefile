@@ -7,8 +7,8 @@ FLAGS_ARCH = -march=native
 # FLAGS_MATH = -ffast-math
 # FLAGS_DEBUG = -ggdb -Wextra
 # FLAGS_PROF = -pg
-FLAGS_OPT = -O
-FLAGS_STD = -std=c++0x
+FLAGS_OPT = -O3
+FLAGS_STD = -std=c++11
 FLAGS_WARN = -Wall -Wextra
 
 CXXFLAGS = $(FLAGS_ARCH) $(FLAGS_MATH) $(FLAGS_OPT) $(FLAGS_DEBUG)

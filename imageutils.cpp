@@ -178,20 +178,10 @@ void clearAlpha(gdImagePtr img) {
 	}
 }
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-#include <random>
-#else
-#include <cstdlib>
-#endif
-
 gdImagePtr blankCanvas(int width, int height, unsigned long seed) {
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
 	std::mt19937 rand;
 
 	rand.seed(seed);
-#else
-	srand(seed);
-#endif
 
 	gdImagePtr result = gdImageCreateTrueColor(width, height);
 

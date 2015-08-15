@@ -4,3 +4,4 @@ test
 fractal.bin
 *.png
 examples
+*.o
