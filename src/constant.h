@@ -128,6 +128,10 @@
 #define MAX_SUBDIVIDE_SIZE 20
 #endif
 
+#ifndef MAX_SUBDIVIDE_AREA
+#define MAX_SUBDIVIDE_AREA (250./(512 * 512))
+#endif
+
 #ifndef MAX_NUM_TRIANGLES
 #define MAX_NUM_TRIANGLES 0xFFFF
 #endif

@@ -116,7 +116,8 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 			output << " - Best Error: " << best.error << endl;
 			output << " - # points inside: " << image.getPointsInside(next).size() << endl;
 		}
-		if (allTriangles.size() == MAX_NUM_TRIANGLES || ((best.error < cutoff*cutoff || image.getPointsInside(next).size() < MAX_SUBDIVIDE_SIZE) && best.error >= 0)) {
+		if (allTriangles.size() == MAX_NUM_TRIANGLES ||
+			((best.error < cutoff*cutoff || image.getPointsInside(next).size() < MAX_SUBDIVIDE_SIZE || next->getArea() < MAX_SUBDIVIDE_AREA) && best.error >= 0)) {
 			next->setTarget(best);
 		} else {
 			subdivide(next);

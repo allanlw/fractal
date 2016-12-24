@@ -126,7 +126,7 @@ void FractalImage::encode(double error) {
 		}
 		while((cur = channels[i]->assignOne(error)) != NULL) {
 			if (outputVerbose()) {
-				output << "Triangle #" << cur->getId();
+				output << "Triangle #" << cur->getId() << " (Area: " << cur->getArea() * image.getWidth() * image.getHeight() << "px)";
 				output << " assigned - "<< (cur->isTerminal()?"Terminal":"Not Terminal") << endl;
 				output << channels[i]->getUnassigned().size() << " unassigned / ";
 				output << channels[i]->getAllTriangles().size() << " total. (";
