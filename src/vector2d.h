@@ -21,10 +21,9 @@
 #define _VECTOR2D_H
 
 #include <string>
+#include <cmath>
 
 class Point2D;
-
-#include "point2d.h"
 
 class Vector2D {
 private:
@@ -47,5 +46,67 @@ public:
 	bool operator*(const Vector2D &other) const;
 	std::string str () const;
 };
+
+#include "point2d.h"
+#include "mathutils.h"
+
+inline Vector2D::Vector2D(const Vector2D& other) : magnitude(other.magnitude), angle(other.angle) {
+}
+
+inline void Vector2D::normalize() {
+	while (angle < 0) {
+		angle += M_PI * 2;
+	}
+	while (angle > M_PI * 2) {
+		angle -= M_PI * 2;
+	}
+	if (angle >= M_PI) {
+		magnitude *= -1;
+		angle -= M_PI;
+	}
+}
+
+inline Vector2D::Vector2D(const Point2D& origin, const Point2D& point2, bool unit) :
+magnitude(unit?1.0:origin.distance(point2)), angle(std::atan2(point2.getY() - origin.getY(), point2.getX() - origin.getX())) {
+	normalize();
+}
+
+inline Vector2D::Vector2D(const double magnitude, const double angle) :
+	magnitude(magnitude), angle(angle) {
+	normalize();
+}
+
+inline double Vector2D::getMagnitude() const {
+	return magnitude;
+}
+
+inline double Vector2D::angleBetween(const Vector2D & other) const {
+	return std::abs(other.angle - angle);
+}
+
+inline Vector2D Vector2D::getOpposite() const {
+	return Vector2D(magnitude * -1.0, angle);
+}
+
+inline double Vector2D::crossProduct(const Vector2D& other) const {
+	return magnitude * other.magnitude * std::sin(angleBetween(other));
+}
+
+inline double Vector2D::dotProduct(const Vector2D& other) const {
+	return magnitude * other.magnitude * std::cos(angleBetween(other));
+}
+
+inline double Vector2D::selfDotProduct() const {
+	return magnitude*magnitude;
+}
+
+inline double Vector2D::getAngle() const {
+	return angle;
+}
+
+inline bool Vector2D::operator==(const Vector2D &other) const {
+	return doublesEqual(magnitude, other.magnitude) && doublesEqual(angle, other.angle);
+}
+
 
 #endif

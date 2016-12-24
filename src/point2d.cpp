@@ -25,6 +25,7 @@
 #include "mathutils.h"
 #include "point2d.h"
 #include "ioutils.h"
+#include "vector2d.h"
 
 using namespace std;
 

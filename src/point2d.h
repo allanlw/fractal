@@ -26,8 +26,6 @@
 
 class Vector2D;
 
-#include "vector2d.h"
-
 class Point2D {
 private:
 	double x;
