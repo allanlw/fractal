@@ -98,12 +98,6 @@ Triangle* TriangleTree::assignOne(double cutoff) {
 	if (outputDebug()) {
 		output << "Assigning Triangle #" << next->getId() << "..." << endl;
 	}
-#if USE_HEURISTICS == 1
-	if (predictError(next->getArea()) > cutoff*PREDICT_ACCURACY) {
-		subdivide(next);
-		return next;
-	}
-#endif
 	list<Triangle*> above(0);
 	insert_iterator<list<Triangle*> > it(above, above.begin());
 	getAllAbove(next, it);
